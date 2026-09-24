@@ -634,7 +634,6 @@
             <button class="btn btn-purple" onclick="generateRandomSchedule()"><i data-lucide="shuffle"></i> Genera Casuale</button>
             <button class="btn btn-danger" onclick="clearCurrentMonth()"><i data-lucide="trash-2"></i> Svuota Mese</button>
             <button class="btn btn-success" onclick="exportExcelXLSX()"><i data-lucide="file-spreadsheet"></i> Scarica Excel (.xlsx)</button>
-            <button class="btn" onclick="saveHTML()"><i data-lucide="save"></i> Salva Pagina</button>
             <button class="btn btn-primary" onclick="triggerPrint()"><i data-lucide="printer"></i> Stampa / PDF</button>
         </div>
     </div>
@@ -1186,15 +1185,6 @@
     function triggerPrint() {
         updatePrintTitle();
         window.print();
-    }
-
-    function saveHTML() {
-        const htmlContent = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
-        const blob = new Blob([htmlContent], { type: "text/html" });
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = `Turni_${monthNames[currentMonth]}_${currentYear}.html`;
-        link.click();
     }
 
     // Initialize Page
