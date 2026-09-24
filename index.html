@@ -1,0 +1,1207 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestione Turni Mensile - Palazzo Caetani & Museo Ebraico</title>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- SheetJS for real XLSX Excel Export -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --primary: #1e293b;
+            --primary-accent: #2563eb;
+            --primary-accent-hover: #1d4ed8;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #0f172a;
+            --text-muted: #64748b;
+            --border: #cbd5e1;
+            --chip-bg: #eff6ff;
+            --chip-border: #bfdbfe;
+            --chip-text: #1e40af;
+            --danger: #ef4444;
+            --danger-hover: #dc2626;
+            --purple: #8b5cf6;
+            --purple-hover: #7c3aed;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.4;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            background: var(--card-bg);
+            padding: 18px 24px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            border: 1px solid var(--border);
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .title-area h1 {
+            font-size: 1.4rem;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .title-area p {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-top: 2px;
+        }
+
+        .controls-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--card-bg);
+            padding: 12px 20px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .controls-bar label {
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: var(--primary);
+        }
+
+        .controls-bar select {
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            font-size: 0.85rem;
+            outline: none;
+            background: #fff;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-left: auto;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid var(--border);
+            background: var(--card-bg);
+            color: var(--text);
+        }
+
+        .btn:hover {
+            background-color: #f1f5f9;
+        }
+
+        .btn-primary {
+            background: var(--primary-accent);
+            color: white;
+            border-color: var(--primary-accent);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-accent-hover);
+        }
+
+        .btn-purple {
+            background: #f3e8ff;
+            color: #6b21a8;
+            border-color: #d8b4fe;
+        }
+
+        .btn-purple:hover {
+            background: #e9d5ff;
+        }
+
+        .btn-success {
+            background: #f0fdf4;
+            color: #166534;
+            border-color: #bbf7d0;
+        }
+
+        .btn-success:hover {
+            background: #dcfce7;
+        }
+
+        .btn-danger {
+            background: #fef2f2;
+            color: var(--danger);
+            border-color: #fecaca;
+        }
+
+        .btn-danger:hover {
+            background: #fee2e2;
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr 280px;
+            gap: 20px;
+        }
+
+        @media (max-width: 1200px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .table-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+            max-width: 100%;
+        }
+
+        table {
+            border-collapse: collapse;
+            text-align: left;
+            width: 100%;
+            table-layout: fixed;
+        }
+
+        th, td {
+            border: 1px solid var(--border);
+            padding: 6px;
+            vertical-align: top;
+            word-wrap: break-word;
+        }
+
+        th {
+            background-color: #f1f5f9;
+            color: var(--primary);
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-align: center;
+        }
+
+        th.weekend-header {
+            background-color: #e2e8f0;
+        }
+
+        .row-header {
+            background-color: #f8fafc;
+            width: 150px;
+            min-width: 150px;
+            position: sticky;
+            left: 0;
+            z-index: 10;
+        }
+
+        .row-header-title {
+            font-weight: 600;
+            font-size: 0.82rem;
+            color: var(--primary);
+        }
+
+        .row-header-sub {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+        }
+
+        .cell-content {
+            min-height: 85px;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .closed-cell {
+            background-color: #f8fafc;
+            color: #cbd5e1;
+            text-align: center;
+            vertical-align: middle;
+            font-style: italic;
+            font-size: 0.72rem;
+        }
+
+        .person-chip {
+            display: inline-flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--chip-bg);
+            border: 1px solid var(--chip-border);
+            color: var(--chip-text);
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            line-height: 1.2;
+        }
+
+        .person-chip .remove-btn {
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            color: #60a5fa;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 3px;
+        }
+
+        .person-chip .remove-btn:hover {
+            color: var(--danger);
+        }
+
+        .add-person-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            width: 100%;
+            padding: 3px;
+            margin-top: auto;
+            border: 1px dashed var(--border);
+            background: transparent;
+            color: var(--text-muted);
+            border-radius: 4px;
+            font-size: 0.68rem;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .add-person-btn:hover {
+            border-color: var(--primary-accent);
+            color: var(--primary-accent);
+            background: #f0fdf4;
+        }
+
+        /* Bottom Month Navigation Bar Below Table */
+        .table-nav-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 20px;
+            background: #f8fafc;
+            border-top: 1px solid var(--border);
+        }
+
+        .month-nav-btn {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: var(--card-bg);
+            color: var(--primary);
+            border: 1px solid var(--border);
+            box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .month-nav-btn:hover {
+            background-color: var(--primary-accent);
+            color: #ffffff;
+            border-color: var(--primary-accent);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+            transform: scale(1.05);
+        }
+
+        .month-nav-label {
+            font-weight: 600;
+            font-size: 0.88rem;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Sidebar Stats */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .stats-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            padding: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .stats-card h3 {
+            font-size: 0.92rem;
+            color: var(--primary);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .week-selector-container {
+            margin-bottom: 12px;
+        }
+
+        .stats-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 8px;
+            background: #f8fafc;
+            border-radius: 6px;
+            font-size: 0.8rem;
+        }
+
+        .stat-badge {
+            font-weight: 600;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+        }
+
+        .badge-ok { background: #dcfce7; color: #166534; }
+        .badge-warning { background: #fef3c7; color: #92400e; }
+        .badge-danger { background: #fee2e2; color: #991b1b; }
+
+        /* Modal Styles */
+        .modal-backdrop {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background: rgba(15, 23, 42, 0.4);
+            backdrop-filter: blur(2px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
+
+        .modal-backdrop.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal {
+            background: var(--card-bg);
+            border-radius: 12px;
+            width: 100%;
+            max-width: 400px;
+            padding: 24px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--border);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .modal-header h4 {
+            font-size: 1rem;
+            color: var(--primary);
+        }
+
+        .modal-close {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            color: var(--text-muted);
+        }
+
+        .modal-select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            outline: none;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        /* Printable Header Banner */
+        .print-title {
+            display: none;
+            text-align: center;
+            margin-bottom: 12px;
+        }
+
+        .print-title h2 {
+            font-size: 14pt;
+            color: #1e293b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .print-title p {
+            font-size: 9pt;
+            color: #475569;
+        }
+
+        /* HARDENED LANDSCAPE PRINT STYLING */
+        @page {
+            size: A4 landscape !important;
+            margin: 5mm !important;
+        }
+
+        @media print {
+            html, body {
+                width: 100% !important;
+                height: 100% !important;
+                background: #ffffff !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                font-size: 7pt !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                color-adjust: exact !important;
+            }
+
+            header, .controls-bar, .sidebar, .add-person-btn, .remove-btn, .actions, .table-nav-footer {
+                display: none !important;
+            }
+
+            .print-title {
+                display: block !important;
+            }
+
+            .container {
+                max-width: 100% !important;
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+
+            .main-layout {
+                display: block !important;
+            }
+
+            .table-card {
+                border: 1px solid #64748b !important;
+                box-shadow: none !important;
+                border-radius: 0 !important;
+                background: #ffffff !important;
+            }
+
+            .table-responsive {
+                overflow: visible !important;
+            }
+
+            table {
+                width: 100% !important;
+                table-layout: fixed !important;
+                border-collapse: collapse !important;
+                font-size: 6.5pt !important;
+            }
+
+            th, td {
+                border: 1px solid #cbd5e1 !important;
+                padding: 3px 2px !important;
+                word-break: break-word !important;
+                overflow: hidden !important;
+            }
+
+            th {
+                background-color: #1e293b !important;
+                color: #ffffff !important;
+                font-size: 7pt !important;
+                font-weight: bold !important;
+            }
+
+            th.weekend-header {
+                background-color: #334155 !important;
+                color: #ffffff !important;
+            }
+
+            .row-header {
+                width: 110px !important;
+                min-width: 110px !important;
+                position: static !important;
+                background-color: #f1f5f9 !important;
+                color: #0f172a !important;
+            }
+
+            .row-header-title {
+                font-size: 7.5pt !important;
+                font-weight: bold !important;
+                color: #1e293b !important;
+            }
+
+            .row-header-sub {
+                font-size: 6pt !important;
+                color: #475569 !important;
+            }
+
+            .cell-content {
+                min-height: 48px !important;
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 2px !important;
+                justify-content: flex-start !important;
+            }
+
+            .person-chip {
+                border: 1px solid #bfdbfe !important;
+                background-color: #eff6ff !important;
+                color: #1e40af !important;
+                padding: 2px 3px !important;
+                border-radius: 3px !important;
+                font-weight: 600 !important;
+                font-size: 6.2pt !important;
+                display: block !important;
+                text-align: center !important;
+            }
+
+            .closed-cell {
+                background-color: #f8fafc !important;
+                color: #94a3b8 !important;
+                font-style: italic !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <div class="title-area">
+            <h1><i data-lucide="calendar"></i> Programmazione Mensile Turni</h1>
+            <p>Palazzo Caetani & Museo Ebraico — Gestione flessibile su scala mensile</p>
+        </div>
+    </header>
+
+    <div class="controls-bar">
+        <label for="monthSelect"><i data-lucide="calendar-days" style="width:16px;height:16px;"></i> Mese:</label>
+        <select id="monthSelect" onchange="changeMonth()"></select>
+
+        <label for="yearSelect" style="margin-left: 10px;">Anno:</label>
+        <select id="yearSelect" onchange="changeMonth()"></select>
+
+        <div class="actions">
+            <button class="btn btn-purple" onclick="generateRandomSchedule()"><i data-lucide="shuffle"></i> Genera Casuale</button>
+            <button class="btn btn-danger" onclick="clearCurrentMonth()"><i data-lucide="trash-2"></i> Svuota Mese</button>
+            <button class="btn btn-success" onclick="exportExcelXLSX()"><i data-lucide="file-spreadsheet"></i> Scarica Excel (.xlsx)</button>
+            <button class="btn" onclick="saveHTML()"><i data-lucide="save"></i> Salva Pagina</button>
+            <button class="btn btn-primary" onclick="triggerPrint()"><i data-lucide="printer"></i> Stampa / PDF</button>
+        </div>
+    </div>
+
+    <!-- Printable Header Banner for Print & PDF Output -->
+    <div class="print-title" id="printTitle">
+        <!-- Dynamically filled with Month & Year -->
+    </div>
+
+    <div class="main-layout">
+        <!-- Main Table Area -->
+        <div class="table-card">
+            <div class="table-responsive">
+                <table id="scheduleTable">
+                    <thead>
+                        <tr id="tableHeaderRow">
+                            <!-- Populated via JavaScript -->
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <!-- Populated via JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Bottom Month Navigation Bar Below Table -->
+            <div class="table-nav-footer">
+                <button class="month-nav-btn" onclick="navigateMonth(-1)" title="Mese Precedente">
+                    <i data-lucide="chevron-left" style="width:22px;height:22px;"></i>
+                </button>
+                <div class="month-nav-label" id="currentMonthDisplay">
+                    <!-- Updated dynamically -->
+                </div>
+                <button class="month-nav-btn" onclick="navigateMonth(1)" title="Mese Successivo">
+                    <i data-lucide="chevron-right" style="width:22px;height:22px;"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Sidebar / Statistics -->
+        <div class="sidebar">
+            <div class="stats-card">
+                <h3><i data-lucide="users"></i> Riepilogo Turni Settimanali</h3>
+                <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 10px;">
+                    Verifica il rispetto del limite massimo di 5 turni per ogni settimana (inclusi giorni a cavallo dei mesi).
+                </p>
+                <div class="week-selector-container">
+                    <label style="font-size: 0.8rem; font-weight: 600;">Seleziona Settimana:</label>
+                    <select id="weekSelect" onchange="updateStats()" style="width: 100%; margin-top: 4px; padding: 6px; border-radius: 6px; border: 1px solid var(--border); font-size: 0.8rem;">
+                        <!-- Populated dynamically -->
+                    </select>
+                </div>
+                <ul class="stats-list" id="statsList">
+                    <!-- Populated via JS -->
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for adding person -->
+<div class="modal-backdrop" id="addModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h4 id="modalTitle">Aggiungi Persona al Turno</h4>
+            <button class="modal-close" onclick="closeModal()"><i data-lucide="x"></i></button>
+        </div>
+        <select class="modal-select" id="personSelect">
+            <!-- Populated via JS -->
+        </select>
+        <div class="modal-actions">
+            <button class="btn" onclick="closeModal()">Annulla</button>
+            <button class="btn btn-primary" onclick="confirmAddPerson()">Aggiungi</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const dayNamesShort = ["Dom", "Lun", "Mar", "Mer", "Gio", "Ven", "Sab"];
+    const monthNames = [
+        "Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno",
+        "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"
+    ];
+
+    const people = [
+        "Simone", "Francesca", "Clara", "Lorenzo", "Maria",
+        "Michela", "Naira", "Regina", "Samira", "Siria"
+    ];
+
+    const rowsConfig = [
+        { id: "pc-m", name: "Palazzo Caetani", time: "Mattina (5h)", openDays: [0, 1, 2, 3, 4, 5, 6], reqCount: 3 },
+        { id: "pc-p", name: "Palazzo Caetani", time: "Pomeriggio (5h)", openDays: [0, 1, 2, 3, 4, 5, 6], reqCount: 3 },
+        { id: "me-m", name: "Museo Ebraico", time: "Mattina (5h)", openDays: [6, 0], reqCount: 2 }, // 6=Sat, 0=Sun
+        { id: "me-p", name: "Museo Ebraico", time: "Pomeriggio (5h)", openDays: [6, 0], reqCount: 2 }
+    ];
+
+    let currentYear = new Date().getFullYear();
+    let currentMonth = new Date().getMonth(); // 0-11
+    let daysInMonth = 31;
+
+    // PERSISTENT GLOBAL SCHEDULE STORE
+    let globalSchedule = {};
+    rowsConfig.forEach(row => globalSchedule[row.id] = {});
+
+    let activeCell = null; // { rowId, dateKey, dayNum }
+
+    function formatDateKey(year, month, day) {
+        const m = String(month + 1).padStart(2, '0');
+        const d = String(day).padStart(2, '0');
+        return `${year}-${m}-${d}`;
+    }
+
+    function updatePrintTitle() {
+        const printTitleElem = document.getElementById("printTitle");
+        if (printTitleElem) {
+            printTitleElem.innerHTML = `
+                <h2>PROGRAMMAZIONE TURNI — ${monthNames[currentMonth].toUpperCase()} ${currentYear}</h2>
+                <p>Sedi operative: Palazzo Caetani & Museo Ebraico</p>
+            `;
+        }
+
+        const currentMonthDisplay = document.getElementById("currentMonthDisplay");
+        if (currentMonthDisplay) {
+            currentMonthDisplay.innerHTML = `<i data-lucide="calendar" style="width:16px;height:16px;"></i> ${monthNames[currentMonth]} ${currentYear}`;
+        }
+    }
+
+    function initControls() {
+        const mSelect = document.getElementById("monthSelect");
+        mSelect.innerHTML = "";
+        monthNames.forEach((m, idx) => {
+            const opt = document.createElement("option");
+            opt.value = idx;
+            opt.innerText = m;
+            if (idx === currentMonth) opt.selected = true;
+            mSelect.appendChild(opt);
+        });
+
+        const ySelect = document.getElementById("yearSelect");
+        ySelect.innerHTML = "";
+        for (let y = currentYear - 1; y <= currentYear + 2; y++) {
+            const opt = document.createElement("option");
+            opt.value = y;
+            opt.innerText = y;
+            if (y === currentYear) opt.selected = true;
+            ySelect.appendChild(opt);
+        }
+    }
+
+    function getDaysInMonthCount(year, month) {
+        return new Date(year, month + 1, 0).getDate();
+    }
+
+    function changeMonth() {
+        currentMonth = parseInt(document.getElementById("monthSelect").value);
+        currentYear = parseInt(document.getElementById("yearSelect").value);
+        daysInMonth = getDaysInMonthCount(currentYear, currentMonth);
+
+        updatePrintTitle();
+        updateWeekSelector();
+        renderTable();
+    }
+
+    function navigateMonth(step) {
+        currentMonth += step;
+        if (currentMonth < 0) {
+            currentMonth = 11;
+            currentYear--;
+        } else if (currentMonth > 11) {
+            currentMonth = 0;
+            currentYear++;
+        }
+
+        initControls();
+        daysInMonth = getDaysInMonthCount(currentYear, currentMonth);
+
+        updatePrintTitle();
+        updateWeekSelector();
+        renderTable();
+    }
+
+    function getFullWeeksOfMonth() {
+        const weeks = [];
+        let weekNum = 1;
+
+        let cursor = new Date(currentYear, currentMonth, 1);
+        let dayOfWeek = cursor.getDay(); // 0=Sun, 1=Mon...
+        let distanceToMonday = (dayOfWeek === 0) ? -6 : (1 - dayOfWeek);
+        cursor.setDate(cursor.getDate() + distanceToMonday);
+
+        const lastDayOfMonth = new Date(currentYear, currentMonth, daysInMonth);
+
+        while (cursor <= lastDayOfMonth || cursor.getDay() !== 1) {
+            const monday = new Date(cursor);
+            const sunday = new Date(cursor);
+            sunday.setDate(sunday.getDate() + 6);
+
+            const dates = [];
+            let temp = new Date(monday);
+            while (temp <= sunday) {
+                dates.push(new Date(temp));
+                temp.setDate(temp.getDate() + 1);
+            }
+
+            const mStartStr = `${monday.getDate()} ${monthNames[monday.getMonth()].substring(0,3)}`;
+            const mEndStr = `${sunday.getDate()} ${monthNames[sunday.getMonth()].substring(0,3)}`;
+
+            weeks.push({
+                num: weekNum,
+                monday: monday,
+                sunday: sunday,
+                dates: dates,
+                label: `Settimana ${weekNum} (${mStartStr} - ${mEndStr})`
+            });
+
+            weekNum++;
+            cursor.setDate(cursor.getDate() + 7);
+
+            if (weekNum > 6) break;
+        }
+
+        return weeks;
+    }
+
+    function updateWeekSelector() {
+        const weekSelect = document.getElementById("weekSelect");
+        weekSelect.innerHTML = "";
+        const weeks = getFullWeeksOfMonth();
+
+        weeks.forEach((w, idx) => {
+            const opt = document.createElement("option");
+            opt.value = idx;
+            opt.innerText = w.label;
+            weekSelect.appendChild(opt);
+        });
+    }
+
+    function getPeopleAssignedOnDate(dateKey, tempSchedule = globalSchedule) {
+        const assignedOnDay = new Set();
+        Object.keys(tempSchedule).forEach(rowId => {
+            const list = (tempSchedule[rowId] && tempSchedule[rowId][dateKey]) ? tempSchedule[rowId][dateKey] : [];
+            list.forEach(p => assignedOnDay.add(p));
+        });
+        return assignedOnDay;
+    }
+
+    function getWeeklyShiftCounts(weekObject, tempSchedule = globalSchedule) {
+        const counts = {};
+        people.forEach(p => counts[p] = 0);
+
+        Object.keys(tempSchedule).forEach(rowId => {
+            weekObject.dates.forEach(d => {
+                const dateKey = formatDateKey(d.getFullYear(), d.getMonth(), d.getDate());
+                const list = (tempSchedule[rowId] && tempSchedule[rowId][dateKey]) ? tempSchedule[rowId][dateKey] : [];
+                list.forEach(p => {
+                    if (counts[p] !== undefined) counts[p]++;
+                });
+            });
+        });
+        return counts;
+    }
+
+    function getWeekForDate(date) {
+        const weeks = getFullWeeksOfMonth();
+        return weeks.find(w => {
+            const dTime = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+            const mTime = new Date(w.monday.getFullYear(), w.monday.getMonth(), w.monday.getDate()).getTime();
+            const sTime = new Date(w.sunday.getFullYear(), w.sunday.getMonth(), w.sunday.getDate()).getTime();
+            return dTime >= mTime && dTime <= sTime;
+        });
+    }
+
+    function renderTable() {
+        const headerRow = document.getElementById("tableHeaderRow");
+        headerRow.innerHTML = `<th class="row-header">Sede - Orario</th>`;
+
+        for (let d = 1; d <= daysInMonth; d++) {
+            const date = new Date(currentYear, currentMonth, d);
+            const dayOfWeek = date.getDay();
+            const dayName = dayNamesShort[dayOfWeek];
+            const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+
+            const th = document.createElement("th");
+            if (isWeekend) th.className = "weekend-header";
+            th.innerHTML = `<div>${d}</div><div style="font-size:0.68rem; font-weight:normal;">${dayName}</div>`;
+            headerRow.appendChild(th);
+        }
+
+        const tbody = document.getElementById("tableBody");
+        tbody.innerHTML = "";
+
+        rowsConfig.forEach(row => {
+            const tr = document.createElement("tr");
+
+            const th = document.createElement("td");
+            th.className = "row-header";
+            th.innerHTML = `
+                <div class="row-header-title">${row.name}</div>
+                <div class="row-header-sub">${row.time}</div>
+            `;
+            tr.appendChild(th);
+
+            for (let d = 1; d <= daysInMonth; d++) {
+                const td = document.createElement("td");
+                const date = new Date(currentYear, currentMonth, d);
+                const dateKey = formatDateKey(currentYear, currentMonth, d);
+                const dayOfWeek = date.getDay();
+
+                if (!row.openDays.includes(dayOfWeek)) {
+                    td.className = "closed-cell";
+                    td.innerText = "Chiuso";
+                } else {
+                    const cellContainer = document.createElement("div");
+                    cellContainer.className = "cell-content";
+
+                    const assigned = (globalSchedule[row.id] && globalSchedule[row.id][dateKey]) ? globalSchedule[row.id][dateKey] : [];
+                    assigned.forEach(p => {
+                        const chip = document.createElement("div");
+                        chip.className = "person-chip";
+                        chip.innerHTML = `
+                            <span>${p}</span>
+                            <button class="remove-btn" onclick="removePerson('${row.id}', '${dateKey}', '${p}')">
+                                <i data-lucide="x" style="width:10px;height:10px;"></i>
+                            </button>
+                        `;
+                        cellContainer.appendChild(chip);
+                    });
+
+                    const addBtn = document.createElement("button");
+                    addBtn.className = "add-person-btn";
+                    addBtn.innerHTML = `<i data-lucide="plus" style="width:10px;height:10px;"></i>`;
+                    addBtn.onclick = () => openAddModal(row.id, dateKey, d);
+                    cellContainer.appendChild(addBtn);
+
+                    td.appendChild(cellContainer);
+                }
+                tr.appendChild(td);
+            }
+
+            tbody.appendChild(tr);
+        });
+
+        lucide.createIcons();
+        updateStats();
+    }
+
+    function updateStats() {
+        const weekSelect = document.getElementById("weekSelect");
+        if (!weekSelect || weekSelect.value === "") return;
+
+        const weeks = getFullWeeksOfMonth();
+        const selectedWeek = weeks[parseInt(weekSelect.value)];
+        if (!selectedWeek) return;
+
+        const counts = getWeeklyShiftCounts(selectedWeek);
+        const statsList = document.getElementById("statsList");
+        statsList.innerHTML = "";
+
+        people.forEach(p => {
+            const count = counts[p];
+            let badgeClass = "badge-ok";
+            if (count === 5) badgeClass = "badge-ok";
+            else if (count < 5) badgeClass = "badge-warning";
+            else badgeClass = "badge-danger";
+
+            const li = document.createElement("li");
+            li.className = "stat-item";
+            li.innerHTML = `
+                <span>${p}</span>
+                <span class="stat-badge ${badgeClass}">${count} / 5 turni</span>
+            `;
+            statsList.appendChild(li);
+        });
+    }
+
+    function openAddModal(rowId, dateKey, dayNum) {
+        activeCell = { rowId, dateKey, dayNum };
+        const select = document.getElementById("personSelect");
+        select.innerHTML = "";
+
+        const date = new Date(currentYear, currentMonth, dayNum);
+        const assignedOnDay = getPeopleAssignedOnDate(dateKey);
+        const weekObject = getWeekForDate(date);
+        const counts = getWeeklyShiftCounts(weekObject);
+
+        const availablePeople = people.filter(p => !assignedOnDay.has(p) && counts[p] < 5);
+
+        if (availablePeople.length === 0) {
+            select.innerHTML = `<option value="">Nessuna persona disponibile (già impegnata oggi o max 5 turni in settimana)</option>`;
+        } else {
+            availablePeople.forEach(p => {
+                const opt = document.createElement("option");
+                opt.value = p;
+                opt.innerText = `${p} (${counts[p]}/5 in sett.)`;
+                select.appendChild(opt);
+            });
+        }
+
+        const modal = document.getElementById("addModal");
+        modal.classList.add("active");
+    }
+
+    function closeModal() {
+        document.getElementById("addModal").classList.remove("active");
+        activeCell = null;
+    }
+
+    function confirmAddPerson() {
+        if (!activeCell) return;
+        const person = document.getElementById("personSelect").value;
+        if (person) {
+            if (!globalSchedule[activeCell.rowId][activeCell.dateKey]) {
+                globalSchedule[activeCell.rowId][activeCell.dateKey] = [];
+            }
+            globalSchedule[activeCell.rowId][activeCell.dateKey].push(person);
+            renderTable();
+        }
+        closeModal();
+    }
+
+    function removePerson(rowId, dateKey, personName) {
+        if (globalSchedule[rowId] && globalSchedule[rowId][dateKey]) {
+            globalSchedule[rowId][dateKey] = globalSchedule[rowId][dateKey].filter(p => p !== personName);
+            renderTable();
+        }
+    }
+
+    function clearCurrentMonth() {
+        if (confirm(`Sei sicuro di voler svuotare i turni di ${monthNames[currentMonth]} ${currentYear}?`)) {
+            rowsConfig.forEach(row => {
+                for (let d = 1; d <= daysInMonth; d++) {
+                    const dateKey = formatDateKey(currentYear, currentMonth, d);
+                    if (globalSchedule[row.id]) {
+                        delete globalSchedule[row.id][dateKey];
+                    }
+                }
+            });
+            renderTable();
+        }
+    }
+
+    // MULTI-TIER RANDOM SHIFT GENERATOR THAT NEVER FAILS OR ALERTS ERRORS
+    function generateRandomSchedule() {
+        if (!confirm(`Generare casualmente i turni per ${monthNames[currentMonth]} ${currentYear}?`)) return;
+
+        // Reset month entries first
+        rowsConfig.forEach(row => {
+            for (let d = 1; d <= daysInMonth; d++) {
+                const dateKey = formatDateKey(currentYear, currentMonth, d);
+                if (globalSchedule[row.id]) delete globalSchedule[row.id][dateKey];
+            }
+        });
+
+        for (let d = 1; d <= daysInMonth; d++) {
+            const date = new Date(currentYear, currentMonth, d);
+            const dateKey = formatDateKey(currentYear, currentMonth, d);
+            const dayOfWeek = date.getDay();
+            const weekObject = getWeekForDate(date);
+
+            for (let row of rowsConfig) {
+                if (!row.openDays.includes(dayOfWeek)) continue;
+
+                let required = row.reqCount;
+                for (let slot = 0; slot < required; slot++) {
+                    let assignedToday = getPeopleAssignedOnDate(dateKey, globalSchedule);
+                    let counts = getWeeklyShiftCounts(weekObject, globalSchedule);
+
+                    // Priority 1: Not assigned today AND < 5 shifts this week
+                    let candidates = people.filter(p => !assignedToday.has(p) && counts[p] < 5);
+
+                    // Priority 2 (Fallback): Not assigned today (sort by lowest shift count)
+                    if (candidates.length === 0) {
+                        candidates = people.filter(p => !assignedToday.has(p))
+                                           .sort((a, b) => counts[a] - counts[b]);
+                    }
+
+                    // Priority 3 (Absolute Fallback): Any person sorted by lowest shift count
+                    if (candidates.length === 0) {
+                        candidates = [...people].sort((a, b) => counts[a] - counts[b]);
+                    }
+
+                    // Pick random candidate from available pool
+                    let chosen = candidates[Math.floor(Math.random() * candidates.length)];
+                    if (!globalSchedule[row.id][dateKey]) globalSchedule[row.id][dateKey] = [];
+                    globalSchedule[row.id][dateKey].push(chosen);
+                }
+            }
+        }
+
+        renderTable();
+    }
+
+    // EXCEL EXPORT VIA SHEETJS (.XLSX) WITH TITLE BANNER
+    function exportExcelXLSX() {
+        const wb = XLSX.utils.book_new();
+        const wsData = [];
+
+        // Title row
+        const titleRow = [`PROGRAMMAZIONE TURNI — ${monthNames[currentMonth].toUpperCase()} ${currentYear}`];
+        wsData.push(titleRow);
+        wsData.push(["Sedi operative: Palazzo Caetani & Museo Ebraico"]);
+        wsData.push([]); // Empty row space
+
+        // Header row
+        const headerRow = ["Sede - Orario"];
+        for (let d = 1; d <= daysInMonth; d++) {
+            const date = new Date(currentYear, currentMonth, d);
+            headerRow.push(`${d} ${dayNamesShort[date.getDay()]}`);
+        }
+        wsData.push(headerRow);
+
+        // Data rows
+        rowsConfig.forEach(row => {
+            const rowData = [`${row.name} - ${row.time}`];
+            for (let d = 1; d <= daysInMonth; d++) {
+                const date = new Date(currentYear, currentMonth, d);
+                const dateKey = formatDateKey(currentYear, currentMonth, d);
+                if (!row.openDays.includes(date.getDay())) {
+                    rowData.push("Chiuso");
+                } else {
+                    const list = (globalSchedule[row.id] && globalSchedule[row.id][dateKey])
+                        ? globalSchedule[row.id][dateKey].join("\n")
+                        : "";
+                    rowData.push(list);
+                }
+            }
+            wsData.push(rowData);
+        });
+
+        const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+        // Merge Title across table columns
+        ws['!merges'] = [
+            { s: { r: 0, c: 0 }, e: { r: 0, c: daysInMonth } },
+            { s: { r: 1, c: 0 }, e: { r: 1, c: daysInMonth } }
+        ];
+
+        // Column widths
+        const colWidths = [{ wch: 25 }];
+        for (let d = 1; d <= daysInMonth; d++) {
+            colWidths.push({ wch: 14 });
+        }
+        ws['!cols'] = colWidths;
+
+        XLSX.utils.book_append_sheet(wb, ws, `${monthNames[currentMonth]} ${currentYear}`);
+        XLSX.writeFile(wb, `Turni_${monthNames[currentMonth]}_${currentYear}.xlsx`);
+    }
+
+    function triggerPrint() {
+        updatePrintTitle();
+        window.print();
+    }
+
+    function saveHTML() {
+        const htmlContent = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
+        const blob = new Blob([htmlContent], { type: "text/html" });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = `Turni_${monthNames[currentMonth]}_${currentYear}.html`;
+        link.click();
+    }
+
+    // Initialize Page
+    document.addEventListener("DOMContentLoaded", () => {
+        initControls();
+        changeMonth();
+    });
+</script>
+</body>
+</html>
