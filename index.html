@@ -8,6 +8,11 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <!-- html2canvas per l'esportazione in Immagine PNG -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <!-- Firebase SDK (Compat v9) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
     <style>
         :root {
             --primary: #1e293b;
@@ -732,7 +737,7 @@
     <header>
         <div class="title-area">
             <h1><i data-lucide="calendar"></i> Programmazione Mensile Turni</h1>
-            <p>Palazzo Caetani & Museo Ebraico — Gestione flessibile su scala mensile</p>
+            <p>Palazzo Caetani & Museo Ebraico — Gestione flessibile su scala mensile (Cloud Sync)</p>
         </div>
     </header>
 
@@ -822,6 +827,23 @@
 </div>
 
 <script>
+    // ==========================================
+    // CONFIGURAZIONE FIREBASE
+    // ==========================================
+    const firebaseConfig = {
+        apiKey: "AIzaSyAmq1g_-yEPofpOrk3mOMFxhmr0PdV0EGQ",
+        authDomain: "turniscu.firebaseapp.com",
+        databaseURL: "https://turniscu-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "turniscu",
+        storageBucket: "turniscu.firebasestorage.app",
+        messagingSenderId: "657749924991",
+        appId: "1:657749924991:web:0006ab25dd28d5ddc8f34a"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    let isSyncing = false;
+
     const dayNamesShort = ["Dom", "Lun", "Mar", "Mer", "Gio", "Ven", "Sab"];
     const monthNames = [
         "Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno",
@@ -914,7 +936,7 @@
 
         updatePrintTitle();
         updateWeekSelector();
-        renderTable();
+        loadDataFromFirebase();
     }
 
     function navigateMonth(step) {
@@ -932,7 +954,56 @@
 
         updatePrintTitle();
         updateWeekSelector();
-        renderTable();
+        loadDataFromFirebase();
+    }
+
+    // Funzioni di Firebase per Salvare e Caricare
+    function saveDatatoFirebase() {
+        if (isSyncing) return;
+        const monthKey = `${currentYear}_${currentMonth}`;
+        db.ref('schedules/' + monthKey).set({
+            schedule: globalSchedule,
+            openState: customOpenState
+        }).catch(err => {
+            console.error("Errore nel salvataggio su Firebase:", err);
+        });
+    }
+
+    function loadDataFromFirebase() {
+        const monthKey = `${currentYear}_${currentMonth}`;
+        isSyncing = true;
+        
+        db.ref('schedules/' + monthKey).once('value').then(snapshot => {
+            const data = snapshot.val();
+            if (data) {
+                globalSchedule = data.schedule || {};
+                customOpenState = data.openState || {};
+            } else {
+                globalSchedule = {};
+                rowsConfig.forEach(row => globalSchedule[row.id] = {});
+                customOpenState = {};
+                rowsConfig.forEach(row => customOpenState[row.id] = {});
+            }
+            isSyncing = false;
+            renderTable();
+        }).catch(err => {
+            console.error("Errore nel caricamento da Firebase:", err);
+            isSyncing = false;
+            renderTable();
+        });
+    }
+
+    function listenFirebaseRealtime() {
+        db.ref('schedules').on('value', snapshot => {
+            if (isSyncing) return;
+            const monthKey = `${currentYear}_${currentMonth}`;
+            const allData = snapshot.val();
+            if (allData && allData[monthKey]) {
+                globalSchedule = allData[monthKey].schedule || {};
+                customOpenState = allData[monthKey].openState || {};
+                renderTable();
+            }
+        });
     }
 
     function getFullWeeksOfMonth() {
@@ -1068,6 +1139,7 @@
         isEditingOpenness = false;
         document.getElementById("toggleModeBtn").style.display = "inline-flex";
         document.getElementById("saveOpennessBtn").style.display = "none";
+        saveDatatoFirebase();
         renderTable();
     }
 
@@ -1184,7 +1256,6 @@
             const table = document.createElement("table");
             table.className = "print-table";
 
-            // Header
             const thead = document.createElement("thead");
             const headerRow = document.createElement("tr");
             headerRow.innerHTML = `<th class="row-header">Sede - Orario</th>`;
@@ -1203,7 +1274,6 @@
             thead.appendChild(headerRow);
             table.appendChild(thead);
 
-            // Body
             const tbody = document.createElement("tbody");
             rowsConfig.forEach(row => {
                 const tr = document.createElement("tr");
@@ -1312,7 +1382,6 @@
 
         const currentlyAssigned = (globalSchedule[rowId] && globalSchedule[rowId][dateKey]) ? globalSchedule[rowId][dateKey] : [];
 
-        // Persone già impegnate in ALTRE sedi nello stesso giorno
         const assignedInOtherRowsOnDay = new Set();
         Object.keys(globalSchedule).forEach(rId => {
             if (rId !== rowId) {
@@ -1374,6 +1443,7 @@
         }
         globalSchedule[activeCell.rowId][activeCell.dateKey] = selectedPeople;
 
+        saveDatatoFirebase();
         renderTable();
         closeModal('addModal');
     }
@@ -1381,6 +1451,7 @@
     function removePerson(rowId, dateKey, personName) {
         if (globalSchedule[rowId] && globalSchedule[rowId][dateKey]) {
             globalSchedule[rowId][dateKey] = globalSchedule[rowId][dateKey].filter(p => p !== personName);
+            saveDatatoFirebase();
             renderTable();
         }
     }
@@ -1395,6 +1466,7 @@
                     }
                 }
             });
+            saveDatatoFirebase();
             renderTable();
         }
     }
@@ -1455,6 +1527,7 @@
             });
         });
 
+        saveDatatoFirebase();
         renderTable();
     }
 
@@ -1500,6 +1573,7 @@
     document.addEventListener("DOMContentLoaded", () => {
         initControls();
         changeMonth();
+        listenFirebaseRealtime();
     });
 </script>
 </body>
