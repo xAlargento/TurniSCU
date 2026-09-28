@@ -560,22 +560,22 @@
             gap: 10px;
         }
 
-        /* CONTENITORE DEDICATO ALLA STAMPA E GENERAZIONE IMMAGINE */
+        /* CONTENITORE DEDICATO ALLA STAMPA E GENERAZIONE IMMAGINE (Ottimizzato, stretto, simmetrico e automatico) */
         .print-export-wrapper {
             display: none;
             background: #ffffff;
-            padding: 10px;
-            width: 100%;
+            padding: 6px;
+            width: max-content;
             box-sizing: border-box;
         }
 
         .print-export-wrapper .print-title {
             text-align: center;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
         }
 
         .print-export-wrapper .print-title h2 {
-            font-size: 11pt;
+            font-size: 10pt;
             color: #1e293b;
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -583,7 +583,7 @@
         }
 
         .print-export-wrapper .print-title p {
-            font-size: 8pt;
+            font-size: 7.5pt;
             color: #475569;
             margin: 1px 0 0 0;
         }
@@ -591,31 +591,33 @@
         .print-export-wrapper .print-only-container {
             display: flex;
             flex-direction: column;
-            gap: 6px;
-            width: 100%;
+            gap: 4px;
+            width: max-content;
         }
 
         .print-export-wrapper .print-table {
-            width: 100%;
-            table-layout: fixed;
+            width: max-content;
+            margin: 0;
+            table-layout: auto;
             border-collapse: collapse;
         }
 
         .print-export-wrapper .print-table th, 
         .print-export-wrapper .print-table td {
             border: 1px solid #475569;
-            padding: 1px 2px;
+            padding: 1px 3px;
             vertical-align: top;
             overflow: hidden;
+            white-space: nowrap;
         }
 
         .print-export-wrapper .print-table th {
             background-color: #1e293b !important;
             color: #ffffff !important;
-            font-size: 7pt;
+            font-size: 6.5pt;
             font-weight: bold;
             text-align: center;
-            padding: 2px 1px;
+            padding: 2px 2px;
         }
 
         .print-export-wrapper .print-table th.weekend-header {
@@ -623,8 +625,8 @@
         }
 
         .print-export-wrapper .print-table .row-header {
-            width: 100px;
-            min-width: 100px;
+            width: auto;
+            min-width: 78px;
             background-color: #f1f5f9 !important;
             color: #0f172a;
             position: static;
@@ -632,21 +634,22 @@
         }
 
         .print-export-wrapper .print-table .row-header-title {
-            font-size: 7.5pt;
+            font-size: 6.8pt;
             font-weight: bold;
             color: #1e293b;
         }
 
         .print-export-wrapper .print-table .row-header-sub {
-            font-size: 6.5pt;
+            font-size: 5.8pt;
             color: #475569;
         }
 
         .print-export-wrapper .print-table .cell-content {
-            min-height: 38px;
+            min-height: 28px;
             height: auto;
             display: flex;
             flex-direction: column;
+            align-items: stretch;
             gap: 1px;
             overflow: visible;
         }
@@ -655,21 +658,23 @@
             border: 1px solid #bfdbfe;
             background-color: #eff6ff !important;
             color: #1e40af !important;
-            padding: 1px 2px;
+            padding: 1px 4px;
             border-radius: 2px;
             font-weight: 700;
-            font-size: 6.8pt;
+            font-size: 6.5pt;
             display: block;
             text-align: center;
-            line-height: 1.1;
+            line-height: 1.2;
+            width: 100%;
+            box-sizing: border-box;
         }
 
         .print-export-wrapper .print-table .closed-cell {
             background-color: #f8fafc !important;
             color: #94a3b8 !important;
             font-style: italic;
-            font-size: 7pt;
-            min-height: 38px;
+            font-size: 6.2pt;
+            min-height: 28px;
             text-align: center;
             vertical-align: middle;
         }
@@ -701,32 +706,37 @@
                 padding: 0 !important;
             }
 
+            .print-export-wrapper .print-table {
+                width: 100% !important;
+                table-layout: fixed !important;
+            }
+
             .print-export-wrapper .print-table th {
-                font-size: 6.5pt !important;
+                font-size: 6pt !important;
                 padding: 2px 0 !important;
             }
 
             .print-export-wrapper .print-table .row-header {
-                width: 90px !important;
-                min-width: 90px !important;
+                width: 72px !important;
+                min-width: 72px !important;
             }
 
             .print-export-wrapper .print-table .row-header-title {
-                font-size: 7pt !important;
+                font-size: 6.5pt !important;
             }
 
             .print-export-wrapper .print-table .row-header-sub {
-                font-size: 5.8pt !important;
+                font-size: 5.2pt !important;
             }
 
             .print-export-wrapper .print-table .person-chip {
-                font-size: 6.2pt !important;
-                padding: 0px 1px !important;
+                font-size: 5.8pt !important;
+                padding: 1px 1px !important;
             }
 
             .print-export-wrapper .print-table .cell-content,
             .print-export-wrapper .print-table .closed-cell {
-                min-height: 32px !important;
+                min-height: 26px !important;
             }
         }
     </style>
@@ -858,8 +868,10 @@
     let rowsConfig = [
         { id: "pc-m", name: "Palazzo Caetani", time: "Mattina (5h)", openDays: [0, 1, 2, 3, 4, 5, 6], reqCount: 3 },
         { id: "pc-p", name: "Palazzo Caetani", time: "Pomeriggio (5h)", openDays: [0, 1, 2, 3, 4, 5, 6], reqCount: 3 },
+        { id: "pc-e", name: "Palazzo Caetani", time: "Evento", openDays: [], reqCount: 1 },
         { id: "me-m", name: "Museo Ebraico", time: "Mattina (5h)", openDays: [6, 0], reqCount: 2 },
-        { id: "me-p", name: "Museo Ebraico", time: "Pomeriggio (5h)", openDays: [6, 0], reqCount: 2 }
+        { id: "me-p", name: "Museo Ebraico", time: "Pomeriggio (5h)", openDays: [6, 0], reqCount: 2 },
+        { id: "me-e", name: "Museo Ebraico", time: "Evento", openDays: [], reqCount: 1 }
     ];
 
     let currentYear = new Date().getFullYear();
@@ -1531,7 +1543,7 @@
         renderTable();
     }
 
-    // ESPORTAZIONE MIRATA IN IMMAGINE PNG AD ALTA RISOLUZIONE
+    // ESPORTAZIONE MIRATA IN IMMAGINE PNG SNELLA E RITAGLIATA ESATTAMENTE SULLA TABELLA
     function exportAsImagePNG() {
         updatePrintTitle();
         preparePrintView();
@@ -1546,7 +1558,8 @@
         html2canvas(exportElem, {
             scale: 3,
             backgroundColor: "#ffffff",
-            useCORS: true
+            useCORS: true,
+            windowWidth: exportElem.scrollWidth + 20
         }).then(canvas => {
             const link = document.createElement("a");
             link.download = `Turni_${monthNames[currentMonth]}_${currentYear}.png`;
