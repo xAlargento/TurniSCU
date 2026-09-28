@@ -174,7 +174,7 @@
 
         .main-layout {
             display: grid;
-            grid-template-columns: 1fr 300px;
+            grid-template-columns: 1fr 320px;
             gap: 20px;
         }
 
@@ -215,25 +215,21 @@
         }
 
         th {
-            background-color: #f1f5f9;
-            color: var(--primary);
-            font-weight: 600;
+            font-weight: 700;
             font-size: 0.72rem;
             text-align: center;
-        }
-
-        th.weekend-header {
-            background-color: #e2e8f0;
+            transition: background-color 0.2s ease;
         }
 
         .row-header {
-            background-color: #f8fafc;
+            background-color: #f8fafc !important;
             width: 110px;
             min-width: 110px;
             position: sticky;
             left: 0;
             z-index: 10;
             padding: 4px;
+            border-right: 1px solid var(--border);
         }
 
         .row-header-title {
@@ -446,7 +442,8 @@
             font-weight: 600;
             padding: 2px 6px;
             border-radius: 10px;
-            font-size: 0.7rem;
+            font-size: 0.72rem;
+            white-space: nowrap;
         }
 
         .badge-ok { background: #dcfce7; color: #166534; }
@@ -503,7 +500,6 @@
             color: var(--text-muted);
         }
 
-        /* STILI PER LA SELEZIONE MULTIPLA PERSONALE */
         .person-checkbox-list {
             display: flex;
             flex-direction: column;
@@ -560,7 +556,7 @@
             gap: 10px;
         }
 
-        /* CONTENITORE DEDICATO ALLA STAMPA E GENERAZIONE IMMAGINE (Ottimizzato, stretto, simmetrico e automatico) */
+        /* CONTENITORE DEDICATO ALLA STAMPA E GENERAZIONE IMMAGINE */
         .print-export-wrapper {
             display: none;
             background: #ffffff;
@@ -571,7 +567,7 @@
 
         .print-export-wrapper .print-title {
             text-align: center;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
         }
 
         .print-export-wrapper .print-title h2 {
@@ -591,7 +587,7 @@
         .print-export-wrapper .print-only-container {
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 8px;
             width: max-content;
         }
 
@@ -612,16 +608,10 @@
         }
 
         .print-export-wrapper .print-table th {
-            background-color: #1e293b !important;
-            color: #ffffff !important;
             font-size: 6.5pt;
             font-weight: bold;
             text-align: center;
             padding: 2px 2px;
-        }
-
-        .print-export-wrapper .print-table th.weekend-header {
-            background-color: #334155 !important;
         }
 
         .print-export-wrapper .print-table .row-header {
@@ -763,12 +753,12 @@
             <button class="btn btn-success" id="saveOpennessBtn" onclick="saveEditOpenness()" style="display:none;"><i data-lucide="check"></i> Salva Aperture</button>
             <button class="btn btn-purple" onclick="generateRandomSchedule()"><i data-lucide="shuffle"></i> Genera Casuale</button>
             <button class="btn btn-danger" onclick="clearCurrentMonth()"><i data-lucide="trash-2"></i> Svuota Mese</button>
-            <button class="btn btn-success" onclick="exportAsImagePNG()"><i data-lucide="image"></i> Scarica Immagine (.png)</button>
-            <button class="btn btn-primary" onclick="triggerPrint()"><i data-lucide="printer"></i> Stampa / PDF</button>
+            <button class="btn btn-success" onclick="openExportModal('png')"><i data-lucide="image"></i> Scarica Immagine (.png)</button>
+            <button class="btn btn-primary" onclick="openExportModal('pdf')"><i data-lucide="printer"></i> Stampa / PDF</button>
         </div>
     </div>
 
-    <!-- Blocco Pulito d'Esportazione (PDF e PNG) -->
+    <!-- Blocco d'Esportazione (PDF e PNG) -->
     <div class="print-export-wrapper" id="printExportWrapper">
         <div class="print-title" id="printTitle"></div>
         <div class="print-only-container" id="printOnlyContainer"></div>
@@ -798,30 +788,22 @@
 
         <div class="sidebar">
             <div class="stats-card">
-                <h3><i data-lucide="users"></i> Riepilogo Turni Settimanali</h3>
+                <h3><i data-lucide="users"></i> Riepilogo Turni & Riposi</h3>
                 <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 10px;">
-                    Verifica il rispetto di 5 turni esatti per ogni settimana.
+                    Verifica il rispetto dei turni e dei giorni liberi per la settimana o per il blocco di 4 settimane.
                 </p>
                 <div class="week-selector-container">
-                    <label style="font-size: 0.8rem; font-weight: 600;">Seleziona Settimana:</label>
+                    <label style="font-size: 0.8rem; font-weight: 600;">Seleziona Periodo:</label>
                     <select id="weekSelect" onchange="updateStats()" style="width: 100%; margin-top: 4px; padding: 6px; border-radius: 6px; border: 1px solid var(--border); font-size: 0.8rem;">
                     </select>
                 </div>
                 <ul class="stats-list" id="statsList"></ul>
             </div>
-
-            <div class="stats-card">
-                <h3><i data-lucide="clock"></i> Riepilogo Turni Mensili</h3>
-                <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 10px;">
-                    Totale turni e ore mensili (max 115 ore / 23 turni).
-                </p>
-                <ul class="stats-list" id="monthlyStatsList"></ul>
-            </div>
         </div>
     </div>
 </div>
 
-<!-- Modal Aggiungi/Gestisci Personale Turno (Selezione Multipla con Checkbox) -->
+<!-- Modal Aggiungi/Gestisci Personale Turno -->
 <div class="modal-backdrop" id="addModal">
     <div class="modal">
         <div class="modal-header">
@@ -832,6 +814,47 @@
         <div class="modal-actions">
             <button class="btn" onclick="closeModal('addModal')">Annulla</button>
             <button class="btn btn-primary" onclick="confirmModalSelection()">Conferma e Salva</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Seleziona Intervallo da Esportare -->
+<div class="modal-backdrop" id="exportModal">
+    <div class="modal" style="max-width: 480px;">
+        <div class="modal-header">
+            <h4 id="exportModalTitle">Seleziona Intervallo da Esportare</h4>
+            <button class="modal-close" onclick="closeModal('exportModal')"><i data-lucide="x"></i></button>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 20px;">
+            <div>
+                <label style="font-weight: 600; font-size: 0.85rem; display: flex; align-items: center; gap: 8px; margin-bottom: 6px; cursor: pointer;">
+                    <input type="radio" name="exportRangeType" value="block" id="exportRadioBlock" checked onchange="toggleExportRangeMode()">
+                    <span>Blocco 4 Settimane (Colorato)</span>
+                </label>
+                <select id="exportBlockSelect" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border); font-size: 0.85rem; outline: none; background: #fff;">
+                </select>
+            </div>
+
+            <div style="border-top: 1px solid var(--border); padding-top: 12px;">
+                <label style="font-weight: 600; font-size: 0.85rem; display: flex; align-items: center; gap: 8px; margin-bottom: 8px; cursor: pointer;">
+                    <input type="radio" name="exportRangeType" value="custom" id="exportRadioCustom" onchange="toggleExportRangeMode()">
+                    <span>Inserimento Manuale Date</span>
+                </label>
+                <div id="customRangeInputs" style="display: flex; gap: 10px; opacity: 0.5; pointer-events: none; transition: opacity 0.2s ease;">
+                    <div style="flex: 1;">
+                        <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 2px;">Data Inizio:</label>
+                        <input type="date" id="exportStartDate" style="width: 100%; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border); font-size: 0.82rem; outline: none;">
+                    </div>
+                    <div style="flex: 1;">
+                        <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 2px;">Data Fine:</label>
+                        <input type="date" id="exportEndDate" style="width: 100%; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border); font-size: 0.82rem; outline: none;">
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-actions">
+            <button class="btn" onclick="closeModal('exportModal')">Annulla</button>
+            <button class="btn btn-primary" onclick="confirmExport()"><i data-lucide="check"></i> Conferma ed Esporta</button>
         </div>
     </div>
 </div>
@@ -853,6 +876,16 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
     let isSyncing = false;
+
+    // COSTANTI PER COLORI A BLOCCHI DI 4 SETTIMANE (Dal 5 Ottobre 2026)
+    const ANCHOR_DATE = new Date(2026, 9, 5, 0, 0, 0, 0); // 5 Ottobre 2026 (Lunedì)
+
+    const BLOCK_COLORS = [
+        { name: "Azzurro", bg: "#e0f2fe", bgWeekend: "#bae6fd", border: "#0284c7", text: "#0369a1" },
+        { name: "Rosso", bg: "#fee2e2", bgWeekend: "#fca5a5", border: "#ef4444", text: "#991b1b" },
+        { name: "Giallo", bg: "#fef3c7", bgWeekend: "#fde047", border: "#eab308", text: "#92400e" },
+        { name: "Verde", bg: "#dcfce7", bgWeekend: "#86efac", border: "#22c55e", text: "#166534" }
+    ];
 
     const dayNamesShort = ["Dom", "Lun", "Mar", "Mer", "Gio", "Ven", "Sab"];
     const monthNames = [
@@ -885,12 +918,28 @@
     let globalSchedule = {};
     rowsConfig.forEach(row => globalSchedule[row.id] = {});
 
+    let allFirebaseSchedules = {};
     let activeCell = null;
+    let pendingExportType = 'png'; // 'png' oppure 'pdf'
+
+    function getDaysDiff(d1, d2) {
+        const utc1 = Date.UTC(d1.getFullYear(), d1.getMonth(), d1.getDate());
+        const utc2 = Date.UTC(d2.getFullYear(), d2.getMonth(), d2.getDate());
+        return Math.floor((utc1 - utc2) / 86400000);
+    }
+
+    function addDays(date, days) {
+        return new Date(date.getFullYear(), date.getMonth(), date.getDate() + days, 0, 0, 0, 0);
+    }
 
     function formatDateKey(year, month, day) {
         const m = String(month + 1).padStart(2, '0');
         const d = String(day).padStart(2, '0');
         return `${year}-${m}-${d}`;
+    }
+
+    function formatDateDisplay(date) {
+        return `${date.getDate()} ${monthNames[date.getMonth()]} ${date.getFullYear()}`;
     }
 
     function isCellOpen(row, dateKey, dayOfWeek) {
@@ -900,13 +949,79 @@
         return row.openDays.includes(dayOfWeek);
     }
 
-    function updatePrintTitle() {
+    function isCellOpenForDateObj(row, date) {
+        const y = date.getFullYear();
+        const m = date.getMonth();
+        const d = date.getDate();
+        const dateKey = formatDateKey(y, m, d);
+        const dayOfWeek = date.getDay();
+        const monthKey = `${y}_${m}`;
+
+        let openState = null;
+        if (y === currentYear && m === currentMonth) {
+            openState = customOpenState;
+        } else if (allFirebaseSchedules[monthKey] && allFirebaseSchedules[monthKey].openState) {
+            openState = allFirebaseSchedules[monthKey].openState;
+        }
+
+        if (openState && openState[row.id] && openState[row.id][dateKey] !== undefined) {
+            return openState[row.id][dateKey];
+        }
+        return row.openDays.includes(dayOfWeek);
+    }
+
+    function getAssignedPeopleForDateObj(rowId, date) {
+        const y = date.getFullYear();
+        const m = date.getMonth();
+        const d = date.getDate();
+        const dateKey = formatDateKey(y, m, d);
+        const monthKey = `${y}_${m}`;
+
+        let sched = null;
+        if (y === currentYear && m === currentMonth) {
+            sched = globalSchedule;
+        } else if (allFirebaseSchedules[monthKey] && allFirebaseSchedules[monthKey].schedule) {
+            sched = allFirebaseSchedules[monthKey].schedule;
+        }
+
+        if (sched && sched[rowId] && sched[rowId][dateKey]) {
+            return sched[rowId][dateKey];
+        }
+        return [];
+    }
+
+    function get4WeekBlockForDate(date) {
+        const diffDays = getDaysDiff(date, ANCHOR_DATE);
+        const blockNum = Math.floor(diffDays / 28);
+        
+        const startDate = addDays(ANCHOR_DATE, blockNum * 28);
+        const endDate = addDays(startDate, 27);
+        
+        let colorIdx = blockNum % 4;
+        if (colorIdx < 0) colorIdx += 4;
+        
+        return {
+            blockNum: blockNum,
+            startDate: startDate,
+            endDate: endDate,
+            color: BLOCK_COLORS[colorIdx]
+        };
+    }
+
+    function updatePrintTitle(startDate, endDate) {
         const printTitleElem = document.getElementById("printTitle");
         if (printTitleElem) {
-            printTitleElem.innerHTML = `
-                <h2>PROGRAMMAZIONE TURNI — ${monthNames[currentMonth].toUpperCase()} ${currentYear}</h2>
-                <p>Sedi operative: Palazzo Caetani & Museo Ebraico</p>
-            `;
+            if (startDate && endDate) {
+                printTitleElem.innerHTML = `
+                    <h2>PROGRAMMAZIONE TURNI — DAL ${formatDateDisplay(startDate).toUpperCase()} AL ${formatDateDisplay(endDate).toUpperCase()}</h2>
+                    <p>Sedi operative: Palazzo Caetani & Museo Ebraico</p>
+                `;
+            } else {
+                printTitleElem.innerHTML = `
+                    <h2>PROGRAMMAZIONE TURNI — ${monthNames[currentMonth].toUpperCase()} ${currentYear}</h2>
+                    <p>Sedi operative: Palazzo Caetani & Museo Ebraico</p>
+                `;
+            }
         }
 
         const currentMonthDisplay = document.getElementById("currentMonthDisplay");
@@ -916,6 +1031,13 @@
     }
 
     function initControls() {
+        const savedMonth = localStorage.getItem("turni_selectedMonth");
+        const savedYear = localStorage.getItem("turni_selectedYear");
+        if (savedMonth !== null && savedYear !== null) {
+            currentMonth = parseInt(savedMonth, 10);
+            currentYear = parseInt(savedYear, 10);
+        }
+
         const mSelect = document.getElementById("monthSelect");
         mSelect.innerHTML = "";
         monthNames.forEach((m, idx) => {
@@ -928,7 +1050,7 @@
 
         const ySelect = document.getElementById("yearSelect");
         ySelect.innerHTML = "";
-        for (let y = currentYear - 1; y <= currentYear + 2; y++) {
+        for (let y = currentYear - 2; y <= currentYear + 3; y++) {
             const opt = document.createElement("option");
             opt.value = y;
             opt.innerText = y;
@@ -942,9 +1064,12 @@
     }
 
     function changeMonth() {
-        currentMonth = parseInt(document.getElementById("monthSelect").value);
-        currentYear = parseInt(document.getElementById("yearSelect").value);
+        currentMonth = parseInt(document.getElementById("monthSelect").value, 10);
+        currentYear = parseInt(document.getElementById("yearSelect").value, 10);
         daysInMonth = getDaysInMonthCount(currentYear, currentMonth);
+
+        localStorage.setItem("turni_selectedMonth", currentMonth);
+        localStorage.setItem("turni_selectedYear", currentYear);
 
         updatePrintTitle();
         updateWeekSelector();
@@ -961,6 +1086,9 @@
             currentYear++;
         }
 
+        localStorage.setItem("turni_selectedMonth", currentMonth);
+        localStorage.setItem("turni_selectedYear", currentYear);
+
         initControls();
         daysInMonth = getDaysInMonthCount(currentYear, currentMonth);
 
@@ -969,7 +1097,6 @@
         loadDataFromFirebase();
     }
 
-    // Funzioni di Firebase per Salvare e Caricare
     function saveDatatoFirebase() {
         if (isSyncing) return;
         const monthKey = `${currentYear}_${currentMonth}`;
@@ -1007,14 +1134,19 @@
 
     function listenFirebaseRealtime() {
         db.ref('schedules').on('value', snapshot => {
+            allFirebaseSchedules = snapshot.val() || {};
             if (isSyncing) return;
             const monthKey = `${currentYear}_${currentMonth}`;
-            const allData = snapshot.val();
-            if (allData && allData[monthKey]) {
-                globalSchedule = allData[monthKey].schedule || {};
-                customOpenState = allData[monthKey].openState || {};
-                renderTable();
+            if (allFirebaseSchedules[monthKey]) {
+                globalSchedule = allFirebaseSchedules[monthKey].schedule || {};
+                customOpenState = allFirebaseSchedules[monthKey].openState || {};
+            } else {
+                globalSchedule = {};
+                rowsConfig.forEach(row => globalSchedule[row.id] = {});
+                customOpenState = {};
+                rowsConfig.forEach(row => customOpenState[row.id] = {});
             }
+            renderTable();
         });
     }
 
@@ -1064,14 +1196,43 @@
     function updateWeekSelector() {
         const weekSelect = document.getElementById("weekSelect");
         weekSelect.innerHTML = "";
+
         const weeks = getFullWeeksOfMonth();
+
+        const grpWeeks = document.createElement("optgroup");
+        grpWeeks.label = "Settimane del Mese";
 
         weeks.forEach((w, idx) => {
             const opt = document.createElement("option");
-            opt.value = idx;
+            opt.value = `week_${idx}`;
             opt.innerText = w.label;
-            weekSelect.appendChild(opt);
+            grpWeeks.appendChild(opt);
         });
+        weekSelect.appendChild(grpWeeks);
+
+        const grpBlocks = document.createElement("optgroup");
+        grpBlocks.label = "Blocchi 4 Settimane";
+
+        const firstDay = new Date(currentYear, currentMonth, 1);
+        const lastDay = new Date(currentYear, currentMonth, daysInMonth);
+
+        const startBlockNum = get4WeekBlockForDate(firstDay).blockNum;
+        const endBlockNum = get4WeekBlockForDate(lastDay).blockNum;
+
+        for (let b = startBlockNum; b <= endBlockNum; b++) {
+            const bStart = addDays(ANCHOR_DATE, b * 28);
+            const bEnd = addDays(bStart, 27);
+            const blockInfo = get4WeekBlockForDate(bStart);
+
+            const sStr = `${bStart.getDate()} ${monthNames[bStart.getMonth()].substring(0,3)}`;
+            const eStr = `${bEnd.getDate()} ${monthNames[bEnd.getMonth()].substring(0,3)} ${bEnd.getFullYear()}`;
+
+            const opt = document.createElement("option");
+            opt.value = `block_${b}`;
+            opt.innerText = `Blocco 4 Sett. (${sStr} - ${eStr}) [${blockInfo.color.name}]`;
+            grpBlocks.appendChild(opt);
+        }
+        weekSelect.appendChild(grpBlocks);
     }
 
     function getPeopleAssignedOnDate(dateKey, tempSchedule = globalSchedule) {
@@ -1083,36 +1244,55 @@
         return assignedOnDay;
     }
 
-    function getWeeklyShiftCounts(weekObject, tempSchedule = globalSchedule) {
-        const counts = {};
-        people.forEach(p => counts[p] = 0);
-
-        Object.keys(tempSchedule).forEach(rowId => {
-            weekObject.dates.forEach(d => {
-                const dateKey = formatDateKey(d.getFullYear(), d.getMonth(), d.getDate());
-                const list = (tempSchedule[rowId] && tempSchedule[rowId][dateKey]) ? tempSchedule[rowId][dateKey] : [];
-                list.forEach(p => {
-                    if (counts[p] !== undefined) counts[p]++;
-                });
-            });
+    function getShiftsAndRestForDateRange(startDate, endDate) {
+        const result = {};
+        people.forEach(p => {
+            result[p] = { shifts: 0, daysWorked: new Set() };
         });
-        return counts;
-    }
 
-    function getMonthlyShiftCounts(tempSchedule = globalSchedule) {
-        const counts = {};
-        people.forEach(p => counts[p] = 0);
+        let curr = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate(), 0, 0, 0, 0);
+        const end = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate(), 0, 0, 0, 0);
 
-        for (let d = 1; d <= daysInMonth; d++) {
-            const dateKey = formatDateKey(currentYear, currentMonth, d);
-            Object.keys(tempSchedule).forEach(rowId => {
-                const list = (tempSchedule[rowId] && tempSchedule[rowId][dateKey]) ? tempSchedule[rowId][dateKey] : [];
-                list.forEach(p => {
-                    if (counts[p] !== undefined) counts[p]++;
+        while (curr <= end) {
+            const y = curr.getFullYear();
+            const m = curr.getMonth();
+            const d = curr.getDate();
+            const dateKey = formatDateKey(y, m, d);
+            const monthKey = `${y}_${m}`;
+
+            let sched = null;
+            if (y === currentYear && m === currentMonth) {
+                sched = globalSchedule;
+            } else if (allFirebaseSchedules[monthKey] && allFirebaseSchedules[monthKey].schedule) {
+                sched = allFirebaseSchedules[monthKey].schedule;
+            }
+
+            if (sched) {
+                Object.keys(sched).forEach(rowId => {
+                    const list = (sched[rowId] && sched[rowId][dateKey]) ? sched[rowId][dateKey] : [];
+                    list.forEach(p => {
+                        if (result[p]) {
+                            result[p].shifts++;
+                            result[p].daysWorked.add(dateKey);
+                        }
+                    });
                 });
-            });
+            }
+
+            curr = addDays(curr, 1);
         }
-        return counts;
+
+        const totalDays = getDaysDiff(endDate, startDate) + 1;
+
+        const stats = {};
+        people.forEach(p => {
+            const shifts = result[p].shifts;
+            const workedDaysCount = result[p].daysWorked.size;
+            const restDays = totalDays - workedDaysCount;
+            stats[p] = { shifts, restDays, totalDays };
+        });
+
+        return stats;
     }
 
     function getWeekForDate(date) {
@@ -1173,8 +1353,13 @@
             const dayName = dayNamesShort[dayOfWeek];
             const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
 
+            const block = get4WeekBlockForDate(date);
+
             const th = document.createElement("th");
-            if (isWeekend) th.className = "weekend-header";
+            th.style.backgroundColor = isWeekend ? block.color.bgWeekend : block.color.bg;
+            th.style.color = block.color.text;
+            th.style.borderBottom = `3px solid ${block.color.border}`;
+
             th.innerHTML = `<div>${d}</div><div style="font-size:0.65rem; font-weight:normal;">${dayName}</div>`;
             headerRow.appendChild(th);
         }
@@ -1249,22 +1434,30 @@
 
         lucide.createIcons();
         updateStats();
-        updateMonthlyStats();
-        preparePrintView();
     }
 
-    function preparePrintView() {
+    // PREPARAZIONE VISTA STAMPA/ESPORTAZIONE DINAMICA PER QUALSIASI INTERVALLO DI DATE
+    function preparePrintView(startDate, endDate) {
         const printContainer = document.getElementById("printOnlyContainer");
         printContainer.innerHTML = "";
 
-        const ranges = [
-            { start: 1, end: Math.min(15, daysInMonth) },
-            { start: 16, end: daysInMonth }
-        ];
+        updatePrintTitle(startDate, endDate);
 
-        ranges.forEach(range => {
-            if (range.start > daysInMonth) return;
+        // Divisione automatica in blocchi di massimo 14-15 giorni per ottimizzare il layout orizzontale
+        const chunks = [];
+        let curr = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+        const end = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
 
+        while (curr <= end) {
+            let chunkStart = new Date(curr);
+            let chunkEnd = addDays(chunkStart, 13);
+            if (chunkEnd > end) chunkEnd = new Date(end);
+
+            chunks.push({ start: chunkStart, end: chunkEnd });
+            curr = addDays(chunkEnd, 1);
+        }
+
+        chunks.forEach(chunk => {
             const table = document.createElement("table");
             table.className = "print-table";
 
@@ -1272,16 +1465,22 @@
             const headerRow = document.createElement("tr");
             headerRow.innerHTML = `<th class="row-header">Sede - Orario</th>`;
 
-            for (let d = range.start; d <= range.end; d++) {
-                const date = new Date(currentYear, currentMonth, d);
-                const dayOfWeek = date.getDay();
+            let dateIter = new Date(chunk.start);
+            while (dateIter <= chunk.end) {
+                const dayOfWeek = dateIter.getDay();
                 const dayName = dayNamesShort[dayOfWeek];
                 const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+                const block = get4WeekBlockForDate(dateIter);
 
                 const th = document.createElement("th");
-                if (isWeekend) th.className = "weekend-header";
-                th.innerHTML = `<div>${d}</div><div style="font-size:0.65rem; font-weight:normal;">${dayName}</div>`;
+                th.style.backgroundColor = isWeekend ? block.color.bgWeekend : block.color.bg;
+                th.style.color = block.color.text;
+                th.style.borderBottom = `2px solid ${block.color.border}`;
+
+                th.innerHTML = `<div>${dateIter.getDate()} ${monthNames[dateIter.getMonth()].substring(0,3)}</div><div style="font-size:0.6rem; font-weight:normal;">${dayName}</div>`;
                 headerRow.appendChild(th);
+
+                dateIter = addDays(dateIter, 1);
             }
             thead.appendChild(headerRow);
             table.appendChild(thead);
@@ -1298,12 +1497,10 @@
                 `;
                 tr.appendChild(th);
 
-                for (let d = range.start; d <= range.end; d++) {
+                let cellIter = new Date(chunk.start);
+                while (cellIter <= chunk.end) {
                     const td = document.createElement("td");
-                    const date = new Date(currentYear, currentMonth, d);
-                    const dateKey = formatDateKey(currentYear, currentMonth, d);
-                    const dayOfWeek = date.getDay();
-                    const open = isCellOpen(row, dateKey, dayOfWeek);
+                    const open = isCellOpenForDateObj(row, cellIter);
 
                     if (!open) {
                         td.className = "closed-cell";
@@ -1312,7 +1509,7 @@
                         const cellContainer = document.createElement("div");
                         cellContainer.className = "cell-content";
 
-                        const assigned = (globalSchedule[row.id] && globalSchedule[row.id][dateKey]) ? globalSchedule[row.id][dateKey] : [];
+                        const assigned = getAssignedPeopleForDateObj(row.id, cellIter);
                         assigned.forEach(p => {
                             const chip = document.createElement("div");
                             chip.className = "person-chip";
@@ -1323,6 +1520,8 @@
                         td.appendChild(cellContainer);
                     }
                     tr.appendChild(td);
+
+                    cellIter = addDays(cellIter, 1);
                 }
                 tbody.appendChild(tr);
             });
@@ -1336,48 +1535,50 @@
         const weekSelect = document.getElementById("weekSelect");
         if (!weekSelect || weekSelect.value === "") return;
 
-        const weeks = getFullWeeksOfMonth();
-        const selectedWeek = weeks[parseInt(weekSelect.value)];
-        if (!selectedWeek) return;
+        const val = weekSelect.value;
+        let statsData = {};
+        let targetShifts = 5;
+        let targetRest = 2;
 
-        const counts = getWeeklyShiftCounts(selectedWeek);
+        if (val.startsWith("week_")) {
+            const idx = parseInt(val.replace("week_", ""), 10);
+            const weeks = getFullWeeksOfMonth();
+            const selectedWeek = weeks[idx];
+            if (!selectedWeek) return;
+
+            statsData = getShiftsAndRestForDateRange(selectedWeek.monday, selectedWeek.sunday);
+            targetShifts = 5;
+            targetRest = 2;
+        } else if (val.startsWith("block_")) {
+            const bNum = parseInt(val.replace("block_", ""), 10);
+            const bStart = addDays(ANCHOR_DATE, bNum * 28);
+            const bEnd = addDays(bStart, 27);
+
+            statsData = getShiftsAndRestForDateRange(bStart, bEnd);
+            targetShifts = 20;
+            targetRest = 8;
+        }
+
         const statsList = document.getElementById("statsList");
         statsList.innerHTML = "";
 
         people.forEach(p => {
-            const count = counts[p];
+            const data = statsData[p] || { shifts: 0, restDays: targetRest + targetShifts };
+            const s = data.shifts;
+            const r = data.restDays;
+
             let badgeClass = "badge-ok";
-            if (count === 5) badgeClass = "badge-ok";
-            else if (count < 5) badgeClass = "badge-warning";
+            if (s === targetShifts && r === targetRest) badgeClass = "badge-ok";
+            else if (s < targetShifts) badgeClass = "badge-warning";
             else badgeClass = "badge-danger";
 
             const li = document.createElement("li");
             li.className = "stat-item";
             li.innerHTML = `
                 <span>${p}</span>
-                <span class="stat-badge ${badgeClass}">${count} / 5 turni</span>
+                <span class="stat-badge ${badgeClass}">${s}/${targetShifts} turni • ${r}/${targetRest} gg liberi</span>
             `;
             statsList.appendChild(li);
-        });
-    }
-
-    function updateMonthlyStats() {
-        const counts = getMonthlyShiftCounts();
-        const monthlyList = document.getElementById("monthlyStatsList");
-        monthlyList.innerHTML = "";
-
-        people.forEach(p => {
-            const turni = counts[p];
-            const ore = turni * 5;
-            let badgeClass = ore <= 115 ? "badge-info" : "badge-danger";
-
-            const li = document.createElement("li");
-            li.className = "stat-item";
-            li.innerHTML = `
-                <span>${p}</span>
-                <span class="stat-badge ${badgeClass}">${turni} turni (${ore}h / max 115h)</span>
-            `;
-            monthlyList.appendChild(li);
         });
     }
 
@@ -1389,8 +1590,11 @@
 
         const date = new Date(currentYear, currentMonth, dayNum);
         const weekObject = getWeekForDate(date);
-        const weeklyCounts = getWeeklyShiftCounts(weekObject);
-        const monthlyCounts = getMonthlyShiftCounts();
+        
+        let weeklyStats = {};
+        if (weekObject) {
+            weeklyStats = getShiftsAndRestForDateRange(weekObject.monday, weekObject.sunday);
+        }
 
         const currentlyAssigned = (globalSchedule[rowId] && globalSchedule[rowId][dateKey]) ? globalSchedule[rowId][dateKey] : [];
 
@@ -1406,22 +1610,21 @@
             const isAssignedHere = currentlyAssigned.includes(p);
             const isAssignedElsewhere = assignedInOtherRowsOnDay.has(p);
 
-            const item = document.createElement("label");
-            item.className = "person-checkbox-item";
-
-            const isOverWeekly = weeklyCounts[p] >= 5 && !isAssignedHere;
-            const isOverMonthly = (monthlyCounts[p] * 5) >= 115 && !isAssignedHere;
+            const pStats = weeklyStats[p] || { shifts: 0, restDays: 7 };
+            const isOverWeekly = pStats.shifts >= 5 && !isAssignedHere;
             const isDisabled = isAssignedElsewhere;
 
             let warningText = "";
             if (isDisabled) warningText = " (Impegnato in altro turno oggi)";
             else if (isOverWeekly) warningText = " (Già 5/5 turni settimanali)";
-            else if (isOverMonthly) warningText = " (Max ore mensili raggiunte)";
+
+            const item = document.createElement("label");
+            item.className = "person-checkbox-item";
 
             item.innerHTML = `
                 <div class="person-checkbox-info">
                     <span class="person-checkbox-name">${p}</span>
-                    <span class="person-checkbox-sub">${weeklyCounts[p]}/5 in sett. - ${monthlyCounts[p]*5}h/115h${warningText}</span>
+                    <span class="person-checkbox-sub">${pStats.shifts}/5 turni sett. (${pStats.restDays} gg liberi)${warningText}</span>
                 </div>
                 <input type="checkbox" value="${p}" ${isAssignedHere ? 'checked' : ''} ${isDisabled ? 'disabled' : ''}>
             `;
@@ -1431,6 +1634,105 @@
 
         const modal = document.getElementById("addModal");
         modal.classList.add("active");
+    }
+
+    // MODAL DI SELEZIONE INTERVALLO PER ESPORTAZIONE
+    function openExportModal(type) {
+        pendingExportType = type;
+
+        const blockSelect = document.getElementById("exportBlockSelect");
+        blockSelect.innerHTML = "";
+
+        const firstDay = new Date(currentYear, currentMonth, 1);
+        const lastDay = new Date(currentYear, currentMonth, daysInMonth);
+
+        const startBlockNum = get4WeekBlockForDate(firstDay).blockNum;
+        const endBlockNum = get4WeekBlockForDate(lastDay).blockNum;
+
+        for (let b = startBlockNum - 1; b <= endBlockNum + 1; b++) {
+            const bStart = addDays(ANCHOR_DATE, b * 28);
+            const bEnd = addDays(bStart, 27);
+            const blockInfo = get4WeekBlockForDate(bStart);
+
+            const sStr = `${bStart.getDate()} ${monthNames[bStart.getMonth()].substring(0,3)}`;
+            const eStr = `${bEnd.getDate()} ${monthNames[bEnd.getMonth()].substring(0,3)} ${bEnd.getFullYear()}`;
+
+            const opt = document.createElement("option");
+            opt.value = b;
+            opt.innerText = `Blocco (${sStr} - ${eStr}) [${blockInfo.color.name}]`;
+            if (b === get4WeekBlockForDate(firstDay).blockNum) opt.selected = true;
+            blockSelect.appendChild(opt);
+        }
+
+        // Impostazione date predefinite per inserimento manuale (primo e ultimo giorno del mese corrente)
+        const sMonth = String(currentMonth + 1).padStart(2, '0');
+        const sDay = String(daysInMonth).padStart(2, '0');
+        document.getElementById("exportStartDate").value = `${currentYear}-${sMonth}-01`;
+        document.getElementById("exportEndDate").value = `${currentYear}-${sMonth}-${sDay}`;
+
+        document.getElementById("exportRadioBlock").checked = true;
+        toggleExportRangeMode();
+
+        const modal = document.getElementById("exportModal");
+        modal.classList.add("active");
+        lucide.createIcons();
+    }
+
+    function toggleExportRangeMode() {
+        const isBlock = document.getElementById("exportRadioBlock").checked;
+        const blockSelect = document.getElementById("exportBlockSelect");
+        const customInputs = document.getElementById("customRangeInputs");
+
+        if (isBlock) {
+            blockSelect.disabled = false;
+            blockSelect.style.opacity = "1";
+            customInputs.style.opacity = "0.4";
+            customInputs.style.pointerEvents = "none";
+        } else {
+            blockSelect.disabled = true;
+            blockSelect.style.opacity = "0.4";
+            customInputs.style.opacity = "1";
+            customInputs.style.pointerEvents = "auto";
+        }
+    }
+
+    function confirmExport() {
+        const isBlock = document.getElementById("exportRadioBlock").checked;
+        let startDate = null;
+        let endDate = null;
+
+        if (isBlock) {
+            const bNum = parseInt(document.getElementById("exportBlockSelect").value, 10);
+            startDate = addDays(ANCHOR_DATE, bNum * 28);
+            endDate = addDays(startDate, 27);
+        } else {
+            const startVal = document.getElementById("exportStartDate").value;
+            const endVal = document.getElementById("exportEndDate").value;
+
+            if (!startVal || !endVal) {
+                alert("Per favore seleziona sia la data di inizio che quella di fine.");
+                return;
+            }
+
+            const sParts = startVal.split("-");
+            const eParts = endVal.split("-");
+
+            startDate = new Date(parseInt(sParts[0], 10), parseInt(sParts[1], 10) - 1, parseInt(sParts[2], 10));
+            endDate = new Date(parseInt(eParts[0], 10), parseInt(eParts[1], 10) - 1, parseInt(eParts[2], 10));
+
+            if (startDate > endDate) {
+                alert("La data di inizio non può essere successiva alla data di fine.");
+                return;
+            }
+        }
+
+        closeModal('exportModal');
+
+        if (pendingExportType === 'png') {
+            exportAsImagePNG(startDate, endDate);
+        } else {
+            triggerPrint(startDate, endDate);
+        }
     }
 
     function closeModal(id) {
@@ -1510,23 +1812,16 @@
 
                     for (let slot = 0; slot < targetCount; slot++) {
                         let assignedToday = getPeopleAssignedOnDate(dateKey, globalSchedule);
-                        let weeklyCounts = getWeeklyShiftCounts(week, globalSchedule);
-                        let monthlyCounts = getMonthlyShiftCounts(globalSchedule);
+                        let wStats = getShiftsAndRestForDateRange(week.monday, week.sunday);
 
                         let candidates = people.filter(p => 
                             !assignedToday.has(p) && 
-                            weeklyCounts[p] < 5 && 
-                            monthlyCounts[p] < 23
+                            wStats[p].shifts < 5
                         );
 
                         if (candidates.length === 0) {
-                            candidates = people.filter(p => !assignedToday.has(p) && monthlyCounts[p] < 23)
-                                               .sort((a, b) => weeklyCounts[a] - weeklyCounts[b]);
-                        }
-
-                        if (candidates.length === 0) {
-                            candidates = people.filter(p => monthlyCounts[p] < 23)
-                                               .sort((a, b) => monthlyCounts[a] - monthlyCounts[b]);
+                            candidates = people.filter(p => !assignedToday.has(p))
+                                               .sort((a, b) => wStats[a].shifts - wStats[b].shifts);
                         }
 
                         if (candidates.length > 0) {
@@ -1543,10 +1838,8 @@
         renderTable();
     }
 
-    // ESPORTAZIONE MIRATA IN IMMAGINE PNG SNELLA E RITAGLIATA ESATTAMENTE SULLA TABELLA
-    function exportAsImagePNG() {
-        updatePrintTitle();
-        preparePrintView();
+    function exportAsImagePNG(startDate, endDate) {
+        preparePrintView(startDate, endDate);
 
         const exportElem = document.getElementById("printExportWrapper");
 
@@ -1562,7 +1855,9 @@
             windowWidth: exportElem.scrollWidth + 20
         }).then(canvas => {
             const link = document.createElement("a");
-            link.download = `Turni_${monthNames[currentMonth]}_${currentYear}.png`;
+            const sStr = `${startDate.getDate()}_${startDate.getMonth() + 1}_${startDate.getFullYear()}`;
+            const eStr = `${endDate.getDate()}_${endDate.getMonth() + 1}_${endDate.getFullYear()}`;
+            link.download = `Turni_${sStr}_al_${eStr}.png`;
             link.href = canvas.toDataURL("image/png");
             link.click();
 
@@ -1577,9 +1872,8 @@
         });
     }
 
-    function triggerPrint() {
-        updatePrintTitle();
-        preparePrintView();
+    function triggerPrint(startDate, endDate) {
+        preparePrintView(startDate, endDate);
         window.print();
     }
 
