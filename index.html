@@ -809,10 +809,11 @@
         <select id="yearSelect" onchange="changeMonth()"></select>
 
         <div class="actions">
+            <button class="btn" onclick="openTimeModal()"><i data-lucide="clock"></i> Gestisci Orari</button>
             <button class="btn" id="toggleModeBtn" onclick="toggleEditOpenness()"><i data-lucide="door-closed"></i> Gestisci Aperture</button>
             <button class="btn btn-success" id="saveOpennessBtn" onclick="saveEditOpenness()" style="display:none;"><i data-lucide="check"></i> Salva Aperture</button>
             <button class="btn btn-purple" onclick="generateRandomSchedule()"><i data-lucide="shuffle"></i> Genera Casuale</button>
-            <button class="btn btn-danger" onclick="clearCurrentMonth()"><i data-lucide="trash-2"></i> Svuota Mese</button>
+            <button class="btn btn-danger" onclick="openClearModal()"><i data-lucide="trash-2"></i> Svuota Turni</button>
             <button class="btn btn-success" onclick="openExportModal('png')"><i data-lucide="image"></i> Scarica Immagine (.png)</button>
             <button class="btn btn-primary" onclick="openExportModal('pdf')"><i data-lucide="printer"></i> Stampa / PDF</button>
         </div>
@@ -931,6 +932,63 @@
     </div>
 </div>
 
+<!-- Modal Seleziona Intervallo da Svuotare -->
+<div class="modal-backdrop" id="clearModal">
+    <div class="modal" style="max-width: 480px;">
+        <div class="modal-header">
+            <h4>Seleziona Intervallo Turni da Svuotare</h4>
+            <button class="modal-close" onclick="closeModal('clearModal')"><i data-lucide="x"></i></button>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 20px;">
+            <div>
+                <label style="font-weight: 600; font-size: 0.85rem; display: flex; align-items: center; gap: 8px; margin-bottom: 6px; cursor: pointer;">
+                    <input type="radio" name="clearRangeType" value="block" id="clearRadioBlock" checked onchange="toggleClearRangeMode()">
+                    <span>Blocco 4 Settimane (Colorato)</span>
+                </label>
+                <select id="clearBlockSelect" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border); font-size: 0.85rem; outline: none; background: #fff;">
+                </select>
+            </div>
+
+            <div style="border-top: 1px solid var(--border); padding-top: 12px;">
+                <label style="font-weight: 600; font-size: 0.85rem; display: flex; align-items: center; gap: 8px; margin-bottom: 8px; cursor: pointer;">
+                    <input type="radio" name="clearRangeType" value="custom" id="clearRadioCustom" onchange="toggleClearRangeMode()">
+                    <span>Inserimento Manuale Date</span>
+                </label>
+                <div id="customClearRangeInputs" style="display: flex; gap: 10px; opacity: 0.5; pointer-events: none; transition: opacity 0.2s ease;">
+                    <div style="flex: 1;">
+                        <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 2px;">Data Inizio:</label>
+                        <input type="date" id="clearStartDate" style="width: 100%; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border); font-size: 0.82rem; outline: none;">
+                    </div>
+                    <div style="flex: 1;">
+                        <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 2px;">Data Fine:</label>
+                        <input type="date" id="clearEndDate" style="width: 100%; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border); font-size: 0.82rem; outline: none;">
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-actions">
+            <button class="btn" onclick="closeModal('clearModal')">Annulla</button>
+            <button class="btn btn-danger" onclick="confirmClear()"><i data-lucide="trash-2"></i> Svuota Turni</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Gestisci Orari Sedi/Fasce -->
+<div class="modal-backdrop" id="timeModal">
+    <div class="modal" style="max-width: 500px;">
+        <div class="modal-header">
+            <h4>Gestisci Orari e Diciture Sedi</h4>
+            <button class="modal-close" onclick="closeModal('timeModal')"><i data-lucide="x"></i></button>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 12px; max-height: 350px; overflow-y: auto; margin-bottom: 20px; padding-right: 4px;" id="timeInputsList">
+        </div>
+        <div class="modal-actions">
+            <button class="btn" onclick="closeModal('timeModal')">Annulla</button>
+            <button class="btn btn-primary" onclick="confirmTimeSelection()"><i data-lucide="check"></i> Salva Orari</button>
+        </div>
+    </div>
+</div>
+
 <script>
     // ==========================================
     // CONFIGURAZIONE FIREBASE
@@ -966,11 +1024,11 @@
     ];
 
     const people = [
-        "Simone", "Francesca", "Clara", "Lorenzo", "Maria",
+        "Simone", "Francesca", "Clara", "Lorenzo", "Consiglia",
         "Michela", "Naira", "Regina", "Samira", "Siria"
     ];
 
-    let rowsConfig = [
+    let defaultRowsConfig = [
         { id: "pc-m", name: "Palazzo Caetani", time: "Mattina (5h)", openDays: [0, 1, 2, 3, 4, 5, 6], reqCount: 3 },
         { id: "pc-p", name: "Palazzo Caetani", time: "Pomeriggio (5h)", openDays: [0, 1, 2, 3, 4, 5, 6], reqCount: 3 },
         { id: "pc-e", name: "Palazzo Caetani", time: "Evento", openDays: [], reqCount: 1 },
@@ -978,6 +1036,8 @@
         { id: "me-p", name: "Museo Ebraico", time: "Pomeriggio (5h)", openDays: [6, 0], reqCount: 2 },
         { id: "me-e", name: "Museo Ebraico", time: "Evento", openDays: [], reqCount: 1 }
     ];
+
+    let rowsConfig = JSON.parse(JSON.stringify(defaultRowsConfig));
 
     let currentYear = new Date().getFullYear();
     let currentMonth = new Date().getMonth();
@@ -1179,7 +1239,8 @@
         db.ref('schedules/' + monthKey).set({
             schedule: globalSchedule,
             openState: customOpenState,
-            notes: monthNotesText
+            notes: monthNotesText,
+            rowsConfig: rowsConfig
         }).catch(err => {
             console.error("Errore nel salvataggio su Firebase:", err);
         });
@@ -1195,12 +1256,22 @@
                 globalSchedule = data.schedule || {};
                 customOpenState = data.openState || {};
                 monthNotesText = data.notes || "";
+                
+                if (data.rowsConfig && Array.isArray(data.rowsConfig)) {
+                    data.rowsConfig.forEach(remoteRow => {
+                        let localRow = rowsConfig.find(r => r.id === remoteRow.id);
+                        if (localRow) {
+                            localRow.time = remoteRow.time;
+                        }
+                    });
+                }
             } else {
                 globalSchedule = {};
                 rowsConfig.forEach(row => globalSchedule[row.id] = {});
                 customOpenState = {};
                 rowsConfig.forEach(row => customOpenState[row.id] = {});
                 monthNotesText = "";
+                rowsConfig = JSON.parse(JSON.stringify(defaultRowsConfig));
             }
 
             const notesInput = document.getElementById("monthNotesInput");
@@ -1224,12 +1295,22 @@
                 globalSchedule = allFirebaseSchedules[monthKey].schedule || {};
                 customOpenState = allFirebaseSchedules[monthKey].openState || {};
                 monthNotesText = allFirebaseSchedules[monthKey].notes || "";
+
+                if (allFirebaseSchedules[monthKey].rowsConfig && Array.isArray(allFirebaseSchedules[monthKey].rowsConfig)) {
+                    allFirebaseSchedules[monthKey].rowsConfig.forEach(remoteRow => {
+                        let localRow = rowsConfig.find(r => r.id === remoteRow.id);
+                        if (localRow) {
+                            localRow.time = remoteRow.time;
+                        }
+                    });
+                }
             } else {
                 globalSchedule = {};
                 rowsConfig.forEach(row => globalSchedule[row.id] = {});
                 customOpenState = {};
                 rowsConfig.forEach(row => customOpenState[row.id] = {});
                 monthNotesText = "";
+                rowsConfig = JSON.parse(JSON.stringify(defaultRowsConfig));
             }
 
             const notesInput = document.getElementById("monthNotesInput");
@@ -1432,6 +1513,41 @@
             lbl.innerText = chk.checked ? "Aperto" : "Chiuso";
             lbl.style.color = chk.checked ? "#166534" : "#991b1b";
         }
+    }
+
+    function openTimeModal() {
+        const container = document.getElementById("timeInputsList");
+        container.innerHTML = "";
+
+        rowsConfig.forEach(row => {
+            const item = document.createElement("div");
+            item.style.cssText = "display: flex; flex-direction: column; gap: 4px; padding: 10px; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px;";
+            item.innerHTML = `
+                <div style="font-weight: 700; font-size: 0.82rem; color: var(--primary);">${row.name}</div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; white-space: nowrap;">Orario / Fascia:</label>
+                    <input type="text" id="input-time-${row.id}" value="${row.time}" style="flex: 1; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border); font-size: 0.82rem; outline: none;">
+                </div>
+            `;
+            container.appendChild(item);
+        });
+
+        const modal = document.getElementById("timeModal");
+        modal.classList.add("active");
+        lucide.createIcons();
+    }
+
+    function confirmTimeSelection() {
+        rowsConfig.forEach(row => {
+            const input = document.getElementById(`input-time-${row.id}`);
+            if (input && input.value.trim() !== "") {
+                row.time = input.value.trim();
+            }
+        });
+
+        saveDatatoFirebase();
+        renderTable();
+        closeModal('timeModal');
     }
 
     function renderTable() {
@@ -1833,6 +1949,126 @@
         }
     }
 
+    // MODAL E GESTIONE SVUOTAMENTO TURNI PER INTERVALLO
+    function openClearModal() {
+        const blockSelect = document.getElementById("clearBlockSelect");
+        blockSelect.innerHTML = "";
+
+        const firstDay = new Date(currentYear, currentMonth, 1);
+        const lastDay = new Date(currentYear, currentMonth, daysInMonth);
+
+        const startBlockNum = get4WeekBlockForDate(firstDay).blockNum;
+        const endBlockNum = get4WeekBlockForDate(lastDay).blockNum;
+
+        for (let b = startBlockNum - 1; b <= endBlockNum + 1; b++) {
+            const bStart = addDays(ANCHOR_DATE, b * 28);
+            const bEnd = addDays(bStart, 27);
+            const blockInfo = get4WeekBlockForDate(bStart);
+
+            const sStr = `${bStart.getDate()} ${monthNames[bStart.getMonth()].substring(0,3)}`;
+            const eStr = `${bEnd.getDate()} ${monthNames[bEnd.getMonth()].substring(0,3)} ${bEnd.getFullYear()}`;
+
+            const opt = document.createElement("option");
+            opt.value = b;
+            opt.innerText = `Blocco (${sStr} - ${eStr}) [${blockInfo.color.name}]`;
+            if (b === get4WeekBlockForDate(firstDay).blockNum) opt.selected = true;
+            blockSelect.appendChild(opt);
+        }
+
+        const sMonth = String(currentMonth + 1).padStart(2, '0');
+        const sDay = String(daysInMonth).padStart(2, '0');
+        document.getElementById("clearStartDate").value = `${currentYear}-${sMonth}-01`;
+        document.getElementById("clearEndDate").value = `${currentYear}-${sMonth}-${sDay}`;
+
+        document.getElementById("clearRadioBlock").checked = true;
+        toggleClearRangeMode();
+
+        const modal = document.getElementById("clearModal");
+        modal.classList.add("active");
+        lucide.createIcons();
+    }
+
+    function toggleClearRangeMode() {
+        const isBlock = document.getElementById("clearRadioBlock").checked;
+        const blockSelect = document.getElementById("clearBlockSelect");
+        const customInputs = document.getElementById("customClearRangeInputs");
+
+        if (isBlock) {
+            blockSelect.disabled = false;
+            blockSelect.style.opacity = "1";
+            customInputs.style.opacity = "0.4";
+            customInputs.style.pointerEvents = "none";
+        } else {
+            blockSelect.disabled = true;
+            blockSelect.style.opacity = "0.4";
+            customInputs.style.opacity = "1";
+            customInputs.style.pointerEvents = "auto";
+        }
+    }
+
+    function confirmClear() {
+        const isBlock = document.getElementById("clearRadioBlock").checked;
+        let startDate = null;
+        let endDate = null;
+
+        if (isBlock) {
+            const bNum = parseInt(document.getElementById("clearBlockSelect").value, 10);
+            startDate = addDays(ANCHOR_DATE, bNum * 28);
+            endDate = addDays(startDate, 27);
+        } else {
+            const startVal = document.getElementById("clearStartDate").value;
+            const endVal = document.getElementById("clearEndDate").value;
+
+            if (!startVal || !endVal) {
+                alert("Per favore seleziona sia la data di inizio che quella di fine.");
+                return;
+            }
+
+            const sParts = startVal.split("-");
+            const eParts = endVal.split("-");
+
+            startDate = new Date(parseInt(sParts[0], 10), parseInt(sParts[1], 10) - 1, parseInt(sParts[2], 10));
+            endDate = new Date(parseInt(eParts[0], 10), parseInt(eParts[1], 10) - 1, parseInt(eParts[2], 10));
+
+            if (startDate > endDate) {
+                alert("La data di inizio non può essere successiva alla data di fine.");
+                return;
+            }
+        }
+
+        const startStr = formatDateDisplay(startDate);
+        const endStr = formatDateDisplay(endDate);
+
+        if (confirm(`Sei sicuro di voler svuotare i turni dall'intervallo ${startStr} al ${endStr}?`)) {
+            closeModal('clearModal');
+
+            let curr = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+            const end = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+
+            while (curr <= end) {
+                const y = curr.getFullYear();
+                const m = curr.getMonth();
+                const d = curr.getDate();
+                const dateKey = formatDateKey(y, m, d);
+
+                rowsConfig.forEach(row => {
+                    if (y === currentYear && m === currentMonth) {
+                        if (globalSchedule[row.id]) {
+                            delete globalSchedule[row.id][dateKey];
+                        }
+                    } else {
+                        db.ref(`schedules/${y}_${m}/schedule/${row.id}/${dateKey}`).remove();
+                    }
+                });
+
+                curr = addDays(curr, 1);
+            }
+
+            saveDatatoFirebase();
+            renderTable();
+        }
+    }
+
     function closeModal(id) {
         document.getElementById(id).classList.remove("active");
         if (id === 'addModal') activeCell = null;
@@ -1863,25 +2099,6 @@
     function removePerson(rowId, dateKey, personName) {
         if (globalSchedule[rowId] && globalSchedule[rowId][dateKey]) {
             globalSchedule[rowId][dateKey] = globalSchedule[rowId][dateKey].filter(p => p !== personName);
-            saveDatatoFirebase();
-            renderTable();
-        }
-    }
-
-    function clearCurrentMonth() {
-        if (confirm(`Sei sicuro di voler svuotare i turni di ${monthNames[currentMonth]} ${currentYear}?`)) {
-            rowsConfig.forEach(row => {
-                for (let d = 1; d <= daysInMonth; d++) {
-                    const dateKey = formatDateKey(currentYear, currentMonth, d);
-                    if (globalSchedule[row.id]) {
-                        delete globalSchedule[row.id][dateKey];
-                    }
-                }
-            });
-            monthNotesText = "";
-            const notesInput = document.getElementById("monthNotesInput");
-            if (notesInput) notesInput.value = "";
-
             saveDatatoFirebase();
             renderTable();
         }
