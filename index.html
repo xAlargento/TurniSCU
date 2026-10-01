@@ -30,6 +30,8 @@
             --danger-hover: #dc2626;
             --purple: #8b5cf6;
             --purple-hover: #7c3aed;
+            --event-bg: #fffbeebd;
+            --event-border: #f59e0b;
         }
 
         * {
@@ -152,6 +154,16 @@
             background: #e9d5ff;
         }
 
+        .btn-warning {
+            background: #fef3c7;
+            color: #92400e;
+            border-color: #fde047;
+        }
+
+        .btn-warning:hover {
+            background: #fde68a;
+        }
+
         .btn-success {
             background: #f0fdf4;
             color: #166534;
@@ -248,6 +260,28 @@
             vertical-align: top;
             word-wrap: normal;
             overflow: hidden;
+        }
+
+        td.has-event {
+            background-color: var(--event-bg) !important;
+            border: 2px solid var(--event-border) !important;
+        }
+
+        .event-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            background: #fef3c7;
+            color: #92400e;
+            border: 1px solid #fcd34d;
+            font-size: 0.6rem;
+            font-weight: 700;
+            padding: 1px 4px;
+            border-radius: 3px;
+            margin-bottom: 2px;
+            text-transform: uppercase;
+            flex-shrink: 0;
         }
 
         th {
@@ -643,6 +677,24 @@
             white-space: nowrap;
         }
 
+        .print-export-wrapper .print-table td.has-event {
+            background-color: #fef3c7 !important;
+            border: 1px solid #d97706 !important;
+        }
+
+        .print-export-wrapper .print-table .event-badge-print {
+            font-size: 5.5pt;
+            font-weight: bold;
+            color: #92400e;
+            background-color: #fde68a;
+            padding: 0px 2px;
+            border-radius: 2px;
+            text-align: center;
+            display: block;
+            margin-bottom: 1px;
+            text-transform: uppercase;
+        }
+
         .print-export-wrapper .print-table th {
             font-size: 6.5pt;
             font-weight: bold;
@@ -812,6 +864,8 @@
             <button class="btn" onclick="openTimeModal()"><i data-lucide="clock"></i> Gestisci Orari</button>
             <button class="btn" id="toggleModeBtn" onclick="toggleEditOpenness()"><i data-lucide="door-closed"></i> Gestisci Aperture</button>
             <button class="btn btn-success" id="saveOpennessBtn" onclick="saveEditOpenness()" style="display:none;"><i data-lucide="check"></i> Salva Aperture</button>
+            <button class="btn btn-warning" id="toggleEventsBtn" onclick="toggleEditEvents()"><i data-lucide="sparkles"></i> Gestisci Eventi</button>
+            <button class="btn btn-success" id="saveEventsBtn" onclick="saveEditEvents()" style="display:none;"><i data-lucide="check"></i> Salva Eventi</button>
             <button class="btn btn-purple" onclick="generateRandomSchedule()"><i data-lucide="shuffle"></i> Genera Casuale</button>
             <button class="btn btn-danger" onclick="openClearModal()"><i data-lucide="trash-2"></i> Svuota Turni</button>
             <button class="btn btn-success" onclick="openExportModal('png')"><i data-lucide="image"></i> Scarica Immagine (.png)</button>
@@ -1043,10 +1097,14 @@
     let currentMonth = new Date().getMonth();
     let daysInMonth = 31;
     let isEditingOpenness = false;
+    let isEditingEvents = false;
     let monthNotesText = "";
 
     let customOpenState = {};
     rowsConfig.forEach(row => customOpenState[row.id] = {});
+
+    let eventState = {};
+    rowsConfig.forEach(row => eventState[row.id] = {});
 
     let globalSchedule = {};
     rowsConfig.forEach(row => globalSchedule[row.id] = {});
@@ -1101,6 +1159,30 @@
             return openState[row.id][dateKey];
         }
         return row.openDays.includes(dayOfWeek);
+    }
+
+    function isCellEvent(row, dateKey) {
+        return !!(eventState[row.id] && eventState[row.id][dateKey]);
+    }
+
+    function isCellEventForDateObj(row, date) {
+        const y = date.getFullYear();
+        const m = date.getMonth();
+        const d = date.getDate();
+        const dateKey = formatDateKey(y, m, d);
+        const monthKey = `${y}_${m}`;
+
+        let eState = null;
+        if (y === currentYear && m === currentMonth) {
+            eState = eventState;
+        } else if (allFirebaseSchedules[monthKey] && allFirebaseSchedules[monthKey].events) {
+            eState = allFirebaseSchedules[monthKey].events;
+        }
+
+        if (eState && eState[row.id] && eState[row.id][dateKey] !== undefined) {
+            return eState[row.id][dateKey];
+        }
+        return false;
     }
 
     function getAssignedPeopleForDateObj(rowId, date) {
@@ -1239,6 +1321,7 @@
         db.ref('schedules/' + monthKey).set({
             schedule: globalSchedule,
             openState: customOpenState,
+            events: eventState,
             notes: monthNotesText,
             rowsConfig: rowsConfig
         }).catch(err => {
@@ -1255,8 +1338,14 @@
             if (data) {
                 globalSchedule = data.schedule || {};
                 customOpenState = data.openState || {};
+                eventState = data.events || {};
                 monthNotesText = data.notes || "";
                 
+                rowsConfig.forEach(row => {
+                    if (!customOpenState[row.id]) customOpenState[row.id] = {};
+                    if (!eventState[row.id]) eventState[row.id] = {};
+                });
+
                 if (data.rowsConfig && Array.isArray(data.rowsConfig)) {
                     data.rowsConfig.forEach(remoteRow => {
                         let localRow = rowsConfig.find(r => r.id === remoteRow.id);
@@ -1270,6 +1359,8 @@
                 rowsConfig.forEach(row => globalSchedule[row.id] = {});
                 customOpenState = {};
                 rowsConfig.forEach(row => customOpenState[row.id] = {});
+                eventState = {};
+                rowsConfig.forEach(row => eventState[row.id] = {});
                 monthNotesText = "";
                 rowsConfig = JSON.parse(JSON.stringify(defaultRowsConfig));
             }
@@ -1294,7 +1385,13 @@
             if (allFirebaseSchedules[monthKey]) {
                 globalSchedule = allFirebaseSchedules[monthKey].schedule || {};
                 customOpenState = allFirebaseSchedules[monthKey].openState || {};
+                eventState = allFirebaseSchedules[monthKey].events || {};
                 monthNotesText = allFirebaseSchedules[monthKey].notes || "";
+
+                rowsConfig.forEach(row => {
+                    if (!customOpenState[row.id]) customOpenState[row.id] = {};
+                    if (!eventState[row.id]) eventState[row.id] = {};
+                });
 
                 if (allFirebaseSchedules[monthKey].rowsConfig && Array.isArray(allFirebaseSchedules[monthKey].rowsConfig)) {
                     allFirebaseSchedules[monthKey].rowsConfig.forEach(remoteRow => {
@@ -1309,6 +1406,8 @@
                 rowsConfig.forEach(row => globalSchedule[row.id] = {});
                 customOpenState = {};
                 rowsConfig.forEach(row => customOpenState[row.id] = {});
+                eventState = {};
+                rowsConfig.forEach(row => eventState[row.id] = {});
                 monthNotesText = "";
                 rowsConfig = JSON.parse(JSON.stringify(defaultRowsConfig));
             }
@@ -1478,6 +1577,7 @@
     }
 
     function toggleEditOpenness() {
+        if (isEditingEvents) saveEditEvents();
         isEditingOpenness = true;
         document.getElementById("toggleModeBtn").style.display = "none";
         document.getElementById("saveOpennessBtn").style.display = "inline-flex";
@@ -1507,11 +1607,46 @@
         renderTable();
     }
 
+    function toggleEditEvents() {
+        if (isEditingOpenness) saveEditOpenness();
+        isEditingEvents = true;
+        document.getElementById("toggleEventsBtn").style.display = "none";
+        document.getElementById("saveEventsBtn").style.display = "inline-flex";
+        renderTable();
+    }
+
+    function saveEditEvents() {
+        rowsConfig.forEach(row => {
+            for (let d = 1; d <= daysInMonth; d++) {
+                const dateKey = formatDateKey(currentYear, currentMonth, d);
+                const chk = document.getElementById(`chk-event-${row.id}-${dateKey}`);
+                if (chk) {
+                    if (!eventState[row.id]) eventState[row.id] = {};
+                    eventState[row.id][dateKey] = chk.checked;
+                }
+            }
+        });
+
+        isEditingEvents = false;
+        document.getElementById("toggleEventsBtn").style.display = "inline-flex";
+        document.getElementById("saveEventsBtn").style.display = "none";
+        saveDatatoFirebase();
+        renderTable();
+    }
+
     function updateCellLabel(chk, labelId) {
         const lbl = document.getElementById(labelId);
         if (lbl) {
             lbl.innerText = chk.checked ? "Aperto" : "Chiuso";
             lbl.style.color = chk.checked ? "#166534" : "#991b1b";
+        }
+    }
+
+    function updateEventLabel(chk, labelId) {
+        const lbl = document.getElementById(labelId);
+        if (lbl) {
+            lbl.innerText = chk.checked ? "Evento" : "No Evento";
+            lbl.style.color = chk.checked ? "#b45309" : "#64748b";
         }
     }
 
@@ -1591,6 +1726,7 @@
                 const dateKey = formatDateKey(currentYear, currentMonth, d);
                 const dayOfWeek = date.getDay();
                 const open = isCellOpen(row, dateKey, dayOfWeek);
+                const hasEvent = isCellEvent(row, dateKey);
 
                 if (isEditingOpenness) {
                     const chkId = `chk-cell-${row.id}-${dateKey}`;
@@ -1603,13 +1739,40 @@
                         <label id="${lblId}" for="${chkId}" style="color: ${open ? '#166534' : '#991b1b'}">${open ? 'Aperto' : 'Chiuso'}</label>
                     `;
                     td.appendChild(toggleBox);
+                } else if (isEditingEvents) {
+                    if (!open) {
+                        td.className = "closed-cell";
+                        td.innerText = "Chiuso";
+                    } else {
+                        const chkId = `chk-event-${row.id}-${dateKey}`;
+                        const lblId = `lbl-event-${row.id}-${dateKey}`;
+
+                        const toggleBox = document.createElement("div");
+                        toggleBox.className = "toggle-overlay-cell";
+                        toggleBox.innerHTML = `
+                            <input type="checkbox" id="${chkId}" ${hasEvent ? 'checked' : ''} onchange="updateEventLabel(this, '${lblId}')">
+                            <label id="${lblId}" for="${chkId}" style="color: ${hasEvent ? '#b45309' : '#64748b'}">${hasEvent ? 'Evento' : 'No Evento'}</label>
+                        `;
+                        td.appendChild(toggleBox);
+                    }
                 } else {
                     if (!open) {
                         td.className = "closed-cell";
                         td.innerText = "Chiuso";
                     } else {
+                        if (hasEvent) {
+                            td.classList.add("has-event");
+                        }
+
                         const cellContainer = document.createElement("div");
                         cellContainer.className = "cell-content";
+
+                        if (hasEvent) {
+                            const evBadge = document.createElement("div");
+                            evBadge.className = "event-badge";
+                            evBadge.innerHTML = `<i data-lucide="sparkles" style="width:10px;height:10px;"></i> Evento`;
+                            cellContainer.appendChild(evBadge);
+                        }
 
                         const assigned = (globalSchedule[row.id] && globalSchedule[row.id][dateKey]) ? globalSchedule[row.id][dateKey] : [];
                         assigned.forEach(p => {
@@ -1706,13 +1869,25 @@
                 while (cellIter <= chunk.end) {
                     const td = document.createElement("td");
                     const open = isCellOpenForDateObj(row, cellIter);
+                    const hasEvent = isCellEventForDateObj(row, cellIter);
 
                     if (!open) {
                         td.className = "closed-cell";
                         td.innerText = "Chiuso";
                     } else {
+                        if (hasEvent) {
+                            td.classList.add("has-event");
+                        }
+
                         const cellContainer = document.createElement("div");
                         cellContainer.className = "cell-content";
+
+                        if (hasEvent) {
+                            const evBadgePrint = document.createElement("div");
+                            evBadgePrint.className = "event-badge-print";
+                            evBadgePrint.innerText = "★ EVENTO";
+                            cellContainer.appendChild(evBadgePrint);
+                        }
 
                         const assigned = getAssignedPeopleForDateObj(row.id, cellIter);
                         assigned.forEach(p => {
